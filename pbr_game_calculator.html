@@ -25,6 +25,7 @@
   label{display:block;margin-top:10px;font-weight:500;}
   input,select,textarea{width:100%;padding:8px;margin-top:4px;border:1px solid #ccc;
                border-radius:6px;box-sizing:border-box;font-size:.9rem;}
+  select[multiple]{height:200px;}
   button{background:#4CAF50;color:#fff;border:none;padding:10px 18px;border-radius:8px;
          cursor:pointer;font-weight:bold;margin:10px 5px 0 0;}
   button:hover{background:#2e7d32;}
@@ -42,7 +43,7 @@
 </header>
 
 <main>
-  <h2 style="text-align:center;color:#388E3C;">⚙️ Policy Based Routing for Game Traffic</h2>
+  <h2 style="text-align:center;color:#388E3C;">⚙️ Multi Game Policy Based Routing Generator</h2>
 
   <!-- RouterOS & ISP Section -->
   <label>Versi RouterOS:</label>
@@ -61,9 +62,8 @@
   <input id="ispGateway" placeholder="contoh: 172.16.0.1" value="172.16.0.1">
 
   <!-- Game Preset -->
-  <label>Pilih Game Preset:</label>
-  <select id="gameSelect">
-    <option value="">-- Pilih Game --</option>
+  <label>Pilih Game Preset (bisa pilih lebih dari satu):</label>
+  <select id="gameSelect" multiple>
     <option value="Mobile Legends">Mobile Legends</option>
     <option value="Free Fire">Free Fire</option>
     <option value="PUBG Mobile">PUBG Mobile</option>
@@ -80,12 +80,11 @@
     <option value="Dream League Soccer">Dream League Soccer</option>
     <option value="Among Us">Among Us</option>
     <option value="Roblox">Roblox</option>
-    <option value="Manual">Manual Input</option>
   </select>
 
   <!-- Manual Game Input Section -->
-  <div id="manualContainer" style="display:none;">
-    <h3>🎮 Game Manual</h3>
+  <div id="manualContainer" style="margin-top:15px;">
+    <h3>🎮 Game Manual (Optional)</h3>
     <div id="manualGameList"></div>
     <button id="addManualBtn" type="button">+ Tambah Game Manual</button>
   </div>
@@ -126,23 +125,16 @@
 window.addEventListener('load',()=>{
   alert(
 "🇮🇩 Bahasa Indonesia\n"+
-"Tools ini digunakan untuk membuat konfigurasi Policy Based Routing (PBR) untuk trafik game. "+
-"Termasuk daftar game populer + opsi manual game (multi input).\n\n"+
-"Gunakan tab dan tombol sesuai kebutuhan.\n\n"+
+"Versi terbaru PBR Game Calculator by @dmibot.\n"+
+"Sekarang kamu bisa memilih beberapa game preset sekaligus, dan juga menambahkan beberapa game manual dalam satu konfigurasi.\n\n"+
 "========================\n\n"+
 "🇬🇧 English Version\n"+
-"This tool builds Policy Based Routing (PBR) configuration for game traffic. "+
-"Includes popular game presets and multiple manual game options."
+"Now you can select multiple preset games and add multiple custom games in one configuration.\n"+
+"Fully adaptive and automatic routing, mangle, and QoS generation."
   );
 });
 
 // === Manual Game Control ===
-document.getElementById('gameSelect').addEventListener('change',()=>{
-  const val = document.getElementById('gameSelect').value;
-  document.getElementById('manualContainer').style.display = (val==='Manual') ? 'block' : 'none';
-});
-
-// Tambah Manual Game
 document.getElementById('addManualBtn').addEventListener('click',()=>{
   const container = document.getElementById('manualGameList');
   const div = document.createElement('div');

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PBR Sosmed Tool | dmibot</title>
+<link rel="icon" href="https://dmibot.github.io/Mikrotik.svg">
+<style>
+  body{margin:0;font-family:"Segoe UI",sans-serif;background:#f8fff8;color:#333;}
+  header{
+    background:#4CAF50;color:#fff;text-align:center;position:relative;
+    padding:25px 10px;border-bottom:5px solid #388E3C;
+  }
+  header img{width:70px;vertical-align:middle;}
+  header h1{margin:10px 0 5px;font-size:1.6rem;}
+  header p{margin:0;font-size:.9rem;opacity:.9;}
+  .home-btn{
+    position:absolute;left:15px;top:15px;background:#fff;color:#4CAF50;
+    border:none;padding:7px 12px;border-radius:8px;font-weight:bold;cursor:pointer;
+    box-shadow:0 2px 5px rgba(0,0,0,.2);transition:.2s;
+  }
+  .home-btn:hover{background:#c8facc;}
+  main{max-width:850px;margin:25px auto;padding:20px;background:#fff;border-radius:14px;
+       box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+  label{display:block;margin-top:10px;font-weight:500;}
+  input,select,textarea{width:100%;padding:8px;margin-top:4px;border:1px solid #ccc;
+               border-radius:6px;box-sizing:border-box;font-size:.9rem;}
+  button{background:#4CAF50;color:#fff;border:none;padding:10px 18px;border-radius:8px;
+         cursor:pointer;font-weight:bold;margin:10px 5px 0 0;}
+  button:hover{background:#2e7d32;}
+  textarea{height:150px;font-family:monospace;font-size:.9rem;resize:vertical;}
+  footer{text-align:center;color:#666;padding:15px;margin-top:30px;font-size:.85rem;}
+  .sosmed-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+               gap:5px;margin-top:10px;}
+  .sosmed-list label{display:flex;align-items:center;gap:6px;font-size:.9rem;}
+  .section{border:1px solid #ddd;border-radius:8px;padding:10px 15px;margin-top:15px;background:#f9f9f9;}
+</style>
+</head>
+<body>
+<header>
+  <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
+  <img src="https://dmibot.github.io/Mikrotik.svg" alt="Mikrotik Logo">
+  <h1>PBR Sosmed Tool</h1>
+  <p>by dmibot</p>
+</header>
+
+<main>
+  <h2 style="text-align:center;color:#388E3C;">🌐 Policy Based Routing for Social Media</h2>
+
+  <!-- Router Info -->
+  <div class="section">
+    <label>Versi RouterOS:</label>
+    <select id="rosVer">
+      <option value="6">RouterOS v6</option>
+      <option value="7" selected>RouterOS v7</option>
+    </select>
+
+    <label>Nama ISP (Prefix Route):</label>
+    <input id="ispName" placeholder="contoh: to_Telkom" value="to_Telkom">
+
+    <label>ISP Interface:</label>
+    <input id="ispInterface" placeholder="contoh: ether5" value="ether5">
+
+    <label>IP Gateway ISP:</label>
+    <input id="ispGateway" placeholder="contoh: 172.8.45.1" value="172.8.45.1">
+  </div>
+
+  <!-- Sosmed Selection -->
+  <div class="section">
+    <label>Pilih Platform Sosial Media:</label>
+    <div class="sosmed-list">
+      <label><input type="checkbox" value="Facebook"> Facebook</label>
+      <label><input type="checkbox" value="Instagram"> Instagram</label>
+      <label><input type="checkbox" value="TikTok"> TikTok</label>
+      <label><input type="checkbox" value="YouTube"> YouTube</label>
+      <label><input type="checkbox" value="Twitter"> Twitter / X</label>
+      <label><input type="checkbox" value="WhatsApp"> WhatsApp</label>
+      <label><input type="checkbox" value="Telegram"> Telegram</label>
+      <label><input type="checkbox" value="Discord"> Discord</label>
+      <label><input type="checkbox" value="Spotify"> Spotify</label>
+      <label><input type="checkbox" value="Netflix"> Netflix</label>
+      <label><input type="checkbox" value="Threads"> Threads</label>
+      <label><input type="checkbox" value="Shopee"> Shopee</label>
+      <label><input type="checkbox" value="Tokopedia"> Tokopedia</label>
+      <label><input type="checkbox" id="manualDomainChk" value="Manual"> Manual Domain</label>
+    </div>
+    <div id="manualDomainInput" style="display:none;margin-top:10px;">
+      <label>Tambahkan Domain (pisahkan dengan koma):</label>
+      <textarea id="manualDomains" placeholder=".wechat.com, .snapchat.com, .pinterest.com"></textarea>
+    </div>
+  </div>
+
+  <!-- Cleanup Mode -->
+  <div class="section">
+    <label>Cleanup Mode:</label>
+    <label><input type="radio" name="cleanupMode" value="timeout" checked> Timeout</label>
+    <label><input type="radio" name="cleanupMode" value="scheduler"> Scheduler Harian</label>
+
+    <div id="timeoutBox">
+      <label>Timeout (contoh: 4h, 6h, 1d):</label>
+      <input id="timeoutValue" placeholder="default: 4h" value="4h">
+    </div>
+
+    <div id="schedulerBox" style="display:none;">
+      <label>Jam Cleanup Harian:</label>
+      <input id="schedHour" type="time" value="03:00">
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div style="text-align:center;margin-top:15px;">
+    <button id="generateBtn">Generate Script</button>
+    <button id="copyBasic">Copy Basic</button>
+    <button id="copyRouting">Copy Routing</button>
+  </div>
+
+  <h3>📜 Basic Configuration (RAW + Address List)</h3>
+  <textarea id="outputBasic" readonly></textarea>
+
+  <h3>🧭 Routing Configuration (Mangle + Scheduler)</h3>
+  <textarea id="outputRouting" readonly></textarea>
+</main>
+
+<footer>© 2025 dmibot | PBR Sosmed Tool</footer>
+
+<script>
+// === Pop-up Dua Bahasa ===
+window.addEventListener('load',()=>{
+  alert(
+"🇮🇩 Bahasa Indonesia\n"+
+"Tools ini membuat konfigurasi Policy Based Routing (PBR) untuk trafik sosial media. "+
+"Menggunakan RAW learning dan Mangle agar setiap aplikasi (Facebook, Instagram, TikTok, dll) "+
+"bisa diarahkan ke ISP tertentu.\n\n"+
+"Kamu bisa pilih Timeout (default 4h) atau Scheduler harian untuk membersihkan address list.\n\n"+
+"========================\n\n"+
+"🇬🇧 English Version\n"+
+"This tool generates Policy Based Routing (PBR) configuration for social media traffic. "+
+"Uses RAW learning and mangle marking to route social apps through a specific ISP. "+
+"You can use Timeout (default 4h) or daily Scheduler cleanup."
+  );
+});
+
+// === Show / Hide Manual Domain Box ===
+document.getElementById("manualDomainChk").addEventListener("change",(e)=>{
+  document.getElementById("manualDomainInput").style.display = e.target.checked ? "block" : "none";
+});
+
+// === Cleanup Mode toggle ===
+document.querySelectorAll('input[name="cleanupMode"]').forEach(r=>{
+  r.addEventListener('change',()=>{
+    const mode = document.querySelector('input[name="cleanupMode"]:checked').value;
+    document.getElementById("timeoutBox").style.display = (mode==="timeout") ? "block" : "none";
+    document.getElementById("schedulerBox").style.display = (mode==="scheduler") ? "block" : "none";
+  });
+});
+</script>
+
+<!-- Logic Generator -->
+<script src="modules/pbr_sosmed_tool.js"></script>
+</body>
+</html>

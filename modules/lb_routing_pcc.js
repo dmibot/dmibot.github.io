@@ -30,11 +30,19 @@ document.getElementById("section2").innerHTML = `
 <textarea id="output_routing" readonly></textarea>
 `;
 
+// === Helper: timestamp ===
+function getTimestamp() {
+  const now = new Date();
+  const pad = n => (n < 10 ? "0" + n : n);
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
 // === Generate Script ===
 document.getElementById("genRoutingBtn").onclick = () => {
   const rosVer = document.getElementById("rosVer").value;
   const failMode = document.getElementById("failMode").value;
   const ipMode = document.getElementById("ipMode").value;
+  const timestamp = getTimestamp();
 
   // Ambil data ISP dari modul pertama
   const ifaceEls = document.querySelectorAll(".iface");
@@ -51,7 +59,13 @@ document.getElementById("genRoutingBtn").onclick = () => {
   }
 
   const totalISP = ispList.length;
-  let script = `# === ROUTING & PCC CONFIGURATION ===\n`;
+  let script = `# =========================================================
+# PCC Loadbalance Tools by @DmiBot
+# Generated on: ${timestamp}
+# =========================================================
+
+# === ROUTING & PCC CONFIGURATION ===
+`;
 
   // Bypass Local Networks
   script += `
@@ -84,9 +98,9 @@ add chain=prerouting dst-address=192.168.0.0/16 action=accept
   script += `\n# Static Routes\n/ip route\n`;
   ispList.forEach(isp => {
     if (rosVer === "6") {
-      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} routing-mark=to_${isp.name} comment="${isp.name}"\n`;
+      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} routing-mark=to_${isp.name} comment="${isp.name} by@DmiBot"\n`;
     } else {
-      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} routing-table=to_${isp.name} comment="${isp.name}"\n`;
+      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} routing-table=to_${isp.name} comment="${isp.name} by@DmiBot"\n`;
     }
   });
 
@@ -95,13 +109,14 @@ add chain=prerouting dst-address=192.168.0.0/16 action=accept
   if (failMode === "RECURSIVE") {
     ispList.forEach((isp, index) => {
       const distance = index + 1;
-      script += `add dst-address=${index === 0 ? "8.8.8.8" : "1.1.1.1"} gateway=${isp.gw} check-gateway=ping comment="${isp.name}"\n`;
-      script += `add dst-address=0.0.0.0/0 gateway=${index === 0 ? "8.8.8.8" : "1.1.1.1"} distance=${distance} comment="${isp.name} Recursive"\n`;
+      const dnsTarget = index === 0 ? "8.8.8.8" : "1.1.1.1";
+      script += `add dst-address=${dnsTarget} gateway=${isp.gw} check-gateway=ping comment="${isp.name} by@DmiBot"\n`;
+      script += `add dst-address=0.0.0.0/0 gateway=${dnsTarget} distance=${distance} comment="${isp.name} Recursive by@DmiBot"\n`;
     });
   } else {
     ispList.forEach((isp, index) => {
       const distance = index + 1;
-      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} distance=${distance} comment="${isp.name} Local"\n`;
+      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} distance=${distance} comment="${isp.name} Local by@DmiBot"\n`;
     });
   }
 

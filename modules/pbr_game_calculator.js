@@ -1,6 +1,6 @@
 // === PBR Game Calculator by @DmiBot ===
 
-// Timestamp helper
+// Helper: Timestamp
 function getTimestamp() {
   const now = new Date();
   const pad = n => (n < 10 ? "0" + n : n);
@@ -43,53 +43,20 @@ const gamePorts = {
     tcp: ["10001-10094"],
     udp: ["10101-10201,10080-10110,17000-18000"]
   },
-  "Stumble Guys": {
-    tcp: ["5055-5058"],
-    udp: ["5055-5058"]
-  },
-  "Genshin Impact": {
-    tcp: ["42472"],
-    udp: ["42472,22101-22102"]
-  },
-  "Clash of Clans": {
-    tcp: ["9330-9340"],
-    udp: ["9330-9340"]
-  },
-  "League of Legends": {
-    tcp: ["2080-2099"],
-    udp: ["5100"]
-  },
-  "DOTA2": {
-    tcp: ["9100-9200,8230-8250,8110-8120,27000-28998"],
-    udp: ["27000-28998,39000"]
-  },
-  "FIFA Online": {
-    tcp: ["7770-7790"],
-    udp: ["16300-16350"]
-  },
-  "Point Blank Mobile": {
-    tcp: ["44590-44610"],
-    udp: ["40000-40010"]
-  },
-  "LINE Get Rich": {
-    tcp: ["10500-10515"],
-    udp: []
-  },
-  "Dream League Soccer": {
-    tcp: [],
-    udp: ["60970-60980"]
-  },
-  "Among Us": {
-    tcp: ["27015-27030,27036-27037"],
-    udp: ["4380,27000-27031,27036"]
-  },
-  "Roblox": {
-    tcp: [],
-    udp: ["49152-65535"]
-  }
+  "Stumble Guys": { tcp: ["5055-5058"], udp: ["5055-5058"] },
+  "Genshin Impact": { tcp: ["42472"], udp: ["42472,22101-22102"] },
+  "Clash of Clans": { tcp: ["9330-9340"], udp: ["9330-9340"] },
+  "League of Legends": { tcp: ["2080-2099"], udp: ["5100"] },
+  "DOTA2": { tcp: ["9100-9200,8230-8250,8110-8120,27000-28998"], udp: ["27000-28998,39000"] },
+  "FIFA Online": { tcp: ["7770-7790"], udp: ["16300-16350"] },
+  "Point Blank Mobile": { tcp: ["44590-44610"], udp: ["40000-40010"] },
+  "LINE Get Rich": { tcp: ["10500-10515"], udp: [] },
+  "Dream League Soccer": { tcp: [], udp: ["60970-60980"] },
+  "Among Us": { tcp: ["27015-27030,27036-27037"], udp: ["4380,27000-27031,27036"] },
+  "Roblox": { tcp: [], udp: ["49152-65535"] }
 };
 
-// === Generate Button Handler ===
+// === Generate Button ===
 document.getElementById("generateBtn").addEventListener("click", () => {
   const rosVer = document.getElementById("rosVer").value;
   const ispName = document.getElementById("ispName").value.trim() || "to_Telkom";
@@ -102,31 +69,34 @@ document.getElementById("generateBtn").addEventListener("click", () => {
 
   const gameList = [];
 
-  // 1️⃣ Game Preset (selected)
-  const presetName = document.getElementById("gameSelect").value;
-  if (presetName && presetName !== "Manual") {
-    gameList.push({ name: presetName, ...gamePorts[presetName] });
+  // === Multi Preset ===
+  const selectedGames = Array.from(document.getElementById("gameSelect").selectedOptions).map(o => o.value);
+  for (const g of selectedGames) {
+    if (gamePorts[g]) gameList.push({ name: g, ...gamePorts[g] });
   }
 
-  // 2️⃣ Manual Game (single)
-  const manualName = document.getElementById("manualName").value.trim();
-  const manualPort = document.getElementById("manualPort").value.trim();
-  if (presetName === "Manual" && manualName && manualPort) {
-    const manual = { name: manualName, tcp: [], udp: [] };
-    const lines = manualPort.split(/\n|;/).map(l => l.trim()).filter(Boolean);
-    for (const line of lines) {
-      if (line.startsWith("tcp:")) manual.tcp.push(line.replace("tcp:", "").trim());
-      else if (line.startsWith("udp:")) manual.udp.push(line.replace("udp:", "").trim());
-      else manual.udp.push(line); // fallback
+  // === Multi Manual ===
+  const manualBlocks = document.querySelectorAll(".manual-block");
+  manualBlocks.forEach(block => {
+    const name = block.querySelector(".manualName").value.trim();
+    const portText = block.querySelector(".manualPort").value.trim();
+    if (name && portText) {
+      const manual = { name, tcp: [], udp: [] };
+      const lines = portText.split(/\n|;/).map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (line.startsWith("tcp:")) manual.tcp.push(line.replace("tcp:", "").trim());
+        else if (line.startsWith("udp:")) manual.udp.push(line.replace("udp:", "").trim());
+      }
+      gameList.push(manual);
     }
-    gameList.push(manual);
-  }
+  });
 
   if (gameList.length === 0) {
-    alert("⚠️ Pilih game atau isi game manual terlebih dahulu!");
+    alert("⚠️ Pilih minimal satu game preset atau isi game manual!");
     return;
   }
 
+  // === OUTPUT ===
   let basic = `# =========================================================
 # PBR Game Calculator by @DmiBot
 # Generated on: ${timestamp}
@@ -134,34 +104,30 @@ document.getElementById("generateBtn").addEventListener("click", () => {
 /ip firewall mangle`;
 
   let routing = "";
-
-  if (rosVer === "7") {
-    routing += `/routing/table add name=${ispName} fib comment="PBR Game Route Table by@DmiBot"\n`;
-  }
+  if (rosVer === "7") routing += `/routing/table add name=${ispName} fib comment="PBR Game Table by@DmiBot"\n`;
   routing += `/ip route`;
 
+  // === Loop tiap game ===
   for (const game of gameList) {
     const gName = game.name.replace(/\s+/g, "_");
 
-    // TCP rules
+    // TCP Lines
     for (const tcpLine of game.tcp || []) {
       if (!tcpLine) continue;
       basic += `\nadd chain=prerouting protocol=tcp dst-port=${tcpLine} action=mark-connection new-connection-mark=${gName}_conn passthrough=yes comment="${game.name} by@DmiBot"`;
     }
 
-    // UDP rules
+    // UDP Lines
     for (const udpLine of game.udp || []) {
       if (!udpLine) continue;
       basic += `\nadd chain=prerouting protocol=udp dst-port=${udpLine} action=mark-connection new-connection-mark=${gName}_conn passthrough=yes comment="${game.name} by@DmiBot"`;
     }
 
-    // Mark routing
+    // Mark Routing
     basic += `\nadd chain=prerouting connection-mark=${gName}_conn action=mark-routing new-routing-mark=${ispName} passthrough=no comment="${game.name} by@DmiBot"\n`;
 
-    // Routing
+    // Routing & Queue
     routing += `\nadd dst-address=0.0.0.0/0 gateway=${gw} routing-mark=${ispName} comment="${game.name} by@DmiBot"`;
-
-    // Simple Queue
     routing += `\n/queue simple add name="${game.name}" max-limit=${bwUp}/${bwDown} priority=${priority} queue=pcq-upload-default/pcq-download-default comment="${game.name} QoS by@DmiBot"\n`;
   }
 

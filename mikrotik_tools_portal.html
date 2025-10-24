@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mikrotik Tools Portal | dmibot</title>
+<link rel="icon" href="https://github.com/dmibot/dmibot.github.io/blob/main/Mikrotik.svg">
+<style>
+  body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background-color: #f8ffff;
+    color: #333;
+  }
+  header {
+    background-color: #008b8b;
+    color: white;
+    text-align: center;
+    padding: 25px 10px;
+    border-bottom: 5px solid #00b5b5;
+  }
+  header img {
+    width: 90px;
+    vertical-align: middle;
+  }
+  header h1 {
+    margin: 10px 0 5px;
+    font-size: 1.8rem;
+  }
+  header p {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.85;
+  }
+
+  main {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    padding: 20px;
+    transition: 0.3s ease;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+  }
+
+  h2 {
+    color: #006b6b;
+    margin-top: 0;
+  }
+
+  textarea {
+    width: 100%;
+    height: 180px;
+    margin-top: 15px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    resize: vertical;
+    background-color: #fefefe;
+  }
+
+  button {
+    background-color: #00b5b5;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    margin-top: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+  }
+  button:hover {
+    background-color: #008b8b;
+  }
+
+  footer {
+    text-align: center;
+    padding: 15px;
+    font-size: 0.9rem;
+    color: #666;
+    border-top: 1px solid #ddd;
+    margin-top: 30px;
+  }
+
+  .hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="https://github.com/dmibot/dmibot.github.io/blob/main/Mikrotik.svg" alt="Mikrotik Logo">
+  <h1>Mikrotik Tools Portal</h1>
+  <p>by dmibot</p>
+</header>
+
+<main>
+  <!-- LOAD BALANCE -->
+  <div class="card">
+    <h2>⚙️ Load Balance Generator (ROS6 / ROS7)</h2>
+    <label>RouterOS Version:</label>
+    <select id="lb_ros">
+      <option value="6">v6</option>
+      <option value="7">v7</option>
+    </select><br><br>
+    <label>ISP Name:</label>
+    <input id="lb_isp" placeholder="contoh: to_Telkom" value="to_ISP"><br><br>
+    <button onclick="generateLB()">Generate Script</button>
+    <button onclick="copyText('lb_output')">Copy</button>
+    <textarea id="lb_output" readonly></textarea>
+  </div>
+
+  <!-- PBR GAME -->
+  <div class="card">
+    <h2>🎮 PBR Game Calculator + Simple QoS</h2>
+    <label>ISP Name:</label>
+    <input id="game_isp" placeholder="contoh: to_Fastlink" value="to_ISP"><br><br>
+    <label>Game Name:</label>
+    <input id="game_name" placeholder="contoh: MobileLegends"><br><br>
+    <label>Game Port:</label>
+    <input id="game_port" placeholder="contoh: 5000-5200"><br><br>
+    <label>Priority (1=highest):</label>
+    <input id="game_priority" type="number" min="1" max="8" value="3"><br><br>
+    <label>Upload Bandwidth (kbps):</label>
+    <input id="game_up" placeholder="contoh: 512"><br><br>
+    <label>Download Bandwidth (kbps):</label>
+    <input id="game_down" placeholder="contoh: 2048"><br><br>
+    <button onclick="generateGame()">Generate Script</button>
+    <button onclick="copyText('game_output')">Copy</button>
+    <textarea id="game_output" readonly></textarea>
+  </div>
+
+  <!-- PBR SOSMED -->
+  <div class="card">
+    <h2>🌐 PBR Sosmed Tool (RAW Learning + Auto Cleanup)</h2>
+    <label>ISP Name:</label>
+    <input id="soc_isp" value="to_ISP"><br><br>
+    <label>Cleanup Time (HH:MM):</label>
+    <input id="soc_time" value="03:00"><br><br>
+    <button onclick="generateSoc()">Generate Script</button>
+    <button onclick="copyText('soc_output')">Copy</button>
+    <textarea id="soc_output" readonly></textarea>
+  </div>
+</main>
+
+<footer>
+  © 2025 dmibot | Mikrotik Tools Portal
+</footer>
+
+<script>
+function copyText(id) {
+  const text = document.getElementById(id);
+  text.select();
+  text.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(text.value);
+  alert("Copied!");
+}
+
+function generateLB() {
+  const ros = document.getElementById("lb_ros").value;
+  const isp = document.getElementById("lb_isp").value || "to_ISP";
+  let script = "";
+
+  if (ros === "6") {
+    script = `# Load Balance PCC for ROSv6
+/ip firewall mangle
+add chain=prerouting in-interface=ether1 connection-mark=no-mark action=mark-connection new-connection-mark=${isp}_conn passthrough=yes
+add chain=prerouting connection-mark=${isp}_conn action=mark-routing new-routing-mark=${isp} passthrough=no
+/ip route
+add dst-address=0.0.0.0/0 gateway=8.8.8.8 routing-mark=${isp} comment="${isp}"
+`;
+  } else {
+    script = `# Load Balance PCC for ROSv7
+/routing/table
+add name=${isp} fib
+/ip/firewall/mangle
+add chain=prerouting in-interface=ether1 connection-mark=no-mark action=mark-connection new-connection-mark=${isp}_conn passthrough=yes
+add chain=prerouting connection-mark=${isp}_conn action=mark-routing new-routing-mark=${isp} passthrough=no
+/ip/route
+add dst-address=0.0.0.0/0 gateway=8.8.8.8 routing-table=${isp} comment="${isp}"
+`;
+  }
+  document.getElementById("lb_output").value = script.trim();
+}
+
+function generateGame() {
+  const isp = document.getElementById("game_isp").value || "to_ISP";
+  const game = document.getElementById("game_name").value || "Game";
+  const port = document.getElementById("game_port").value || "5000-5200";
+  const prio = document.getElementById("game_priority").value || "3";
+  const up = document.getElementById("game_up").value || "512";
+  const down = document.getElementById("game_down").value || "2048";
+
+  const script = `# PBR Game Script for ${game}
+/ip firewall mangle
+add chain=prerouting protocol=tcp port=${port} action=mark-routing new-routing-mark=${isp} passthrough=no comment="${game}"
+/queue simple
+add name="${game}_QoS" target="" max-limit=${down}k/${up}k priority=${prio} queue=pcq-download-default/pcq-upload-default comment="${game}"
+`;
+  document.getElementById("game_output").value = script.trim();
+}
+
+function generateSoc() {
+  const isp = document.getElementById("soc_isp").value || "to_ISP";
+  const time = document.getElementById("soc_time").value || "03:00";
+
+  const script = `# PBR Sosmed Tool
+/ip firewall raw
+add action=add-dst-to-address-list chain=prerouting content=.facebook.com address-list=FACEBOOK address-list-timeout=1d
+add action=add-dst-to-address-list chain=prerouting content=.tiktokcdn.com address-list=TIKTOK address-list-timeout=1d
+add action=add-dst-to-address-list chain=prerouting content=.instagram.com address-list=INSTAGRAM address-list-timeout=1d
+/system scheduler
+add name="cleanup_sosmed" on-event="/ip firewall address-list remove [find list~\"FACEBOOK|TIKTOK|INSTAGRAM\"]" start-time=${time} interval=1d comment="Auto cleanup"
+`;
+  document.getElementById("soc_output").value = script.trim();
+}
+</script>
+</body>
+</html>

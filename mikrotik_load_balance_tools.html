@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mikrotik Load Balance PCC Tool | dmibot</title>
+<link rel="icon" href="https://dmibot.github.io/Mikrotik.svg">
+<style>
+  body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background-color: #f8fff8;
+    color: #222;
+  }
+  header {
+    background-color: #4CAF50;
+    color: white;
+    text-align: center;
+    padding: 25px 10px;
+    border-bottom: 5px solid #388E3C;
+  }
+  header img {
+    width: 80px;
+    vertical-align: middle;
+  }
+  header h1 {
+    font-size: 1.9rem;
+    margin: 10px 0 5px;
+  }
+  header p {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.85;
+  }
+
+  main {
+    max-width: 950px;
+    margin: 30px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  }
+
+  h2 {
+    text-align: center;
+    color: #f39c12;
+    font-weight: bold;
+    letter-spacing: 2px;
+  }
+
+  label {
+    font-weight: 500;
+    display: block;
+    margin-top: 12px;
+    color: #333;
+  }
+  input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    border-radius: 6px;
+    border: 1px solid #a6c8ff;
+    background-color: #fdfefe;
+    box-sizing: border-box;
+    transition: 0.2s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76,175,80,0.3);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  textarea {
+    width: 100%;
+    height: 180px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    resize: vertical;
+  }
+
+  button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+    transition: 0.2s;
+  }
+  button:hover {
+    background-color: #2e7d32;
+  }
+
+  footer {
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    padding: 20px;
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 20px;
+    margin-top: 6px;
+  }
+  .radio-group label {
+    font-weight: normal;
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="https://dmibot.github.io/Mikrotik.svg" alt="Mikrotik Logo">
+  <h1>Mikrotik LB PCC Tool</h1>
+  <p>by dmibot</p>
+</header>
+
+<main>
+  <h2>⚙️ MIKROTIK LB PCC TOOL</h2>
+  <div class="grid">
+    <div>
+      <label>Versi ROS</label>
+      <select id="ros_ver">
+        <option value="6">V6</option>
+        <option value="7" selected>V7</option>
+      </select>
+    </div>
+    <div>
+      <label>IP ISP Sama?</label>
+      <select id="ip_sama">
+        <option value="BEDA" selected>BEDA</option>
+        <option value="SAMA">SAMA</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Nama Interface ISP-1:</label>
+      <input id="isp1" placeholder="ether1 METRO">
+    </div>
+    <div>
+      <label>IP Gateway ISP-1:</label>
+      <input id="gw1" placeholder="10.10.2.1">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>Nama Interface ISP-2:</label>
+      <input id="isp2" placeholder="ether2 IBIZ">
+    </div>
+    <div>
+      <label>IP Gateway ISP-2:</label>
+      <input id="gw2" placeholder="192.168.1.1">
+    </div>
+  </div>
+
+  <label>Route Failover</label>
+  <div class="radio-group">
+    <label><input type="radio" name="fail" value="LOCAL"> LOCAL</label>
+    <label><input type="radio" name="fail" value="RECURSIVE" checked> RECURSIVE</label>
+  </div>
+
+  <div style="text-align:center">
+    <button onclick="generateScript()">Generate Script</button>
+    <button onclick="copyText('output1')">Copy Basic</button>
+    <button onclick="copyText('output2')">Copy Routing</button>
+  </div>
+
+  <h3>📜 Konfigurasi Dasar</h3>
+  <textarea id="output1" readonly></textarea>
+
+  <h3>🧭 Konfigurasi Routing</h3>
+  <textarea id="output2" readonly></textarea>
+</main>
+
+<footer>© 2025 dmibot | Mikrotik LB PCC Tool</footer>
+
+<script>
+function copyText(id) {
+  const t = document.getElementById(id);
+  t.select(); t.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(t.value);
+  alert("Copied!");
+}
+
+function generateScript() {
+  const ros = document.getElementById("ros_ver").value;
+  const isp1 = document.getElementById("isp1").value || "ether1";
+  const isp2 = document.getElementById("isp2").value || "ether2";
+  const gw1 = document.getElementById("gw1").value || "10.10.10.1";
+  const gw2 = document.getElementById("gw2").value || "20.20.20.1";
+  const ipSama = document.getElementById("ip_sama").value;
+  const failover = document.querySelector('input[name="fail"]:checked').value;
+
+  // Script dasar
+  let basic = `
+/interface list
+add name=WAN
+add name=LAN
+
+/interface list member
+add interface=${isp1} list=WAN
+add interface=${isp2} list=WAN
+
+/ip dns set allow-remote-requests=yes servers=8.8.8.8,1.1.1.1
+/ip firewall nat
+add chain=srcnat out-interface-list=WAN action=masquerade
+`;
+
+  // Script routing + PCC
+  let routing = "";
+
+  if (ros === "6") {
+    routing += `
+# ROUTEROS v6 PCC CONFIG
+/ip firewall mangle
+add chain=prerouting in-interface-list=LAN per-connection-classifier=both-addresses:2/0 action=mark-connection new-connection-mark=WAN1_conn passthrough=yes
+add chain=prerouting in-interface-list=LAN per-connection-classifier=both-addresses:2/1 action=mark-connection new-connection-mark=WAN2_conn passthrough=yes
+add chain=prerouting connection-mark=WAN1_conn action=mark-routing new-routing-mark=to_WAN1 passthrough=no
+add chain=prerouting connection-mark=WAN2_conn action=mark-routing new-routing-mark=to_WAN2 passthrough=no
+
+/ip route
+add dst-address=0.0.0.0/0 gateway=${gw1} routing-mark=to_WAN1
+add dst-address=0.0.0.0/0 gateway=${gw2} routing-mark=to_WAN2
+`;
+  } else {
+    routing += `
+# ROUTEROS v7 PCC CONFIG
+/routing/table
+add name=to_WAN1 fib
+add name=to_WAN2 fib
+
+/ip/firewall/mangle
+add chain=prerouting in-interface-list=LAN per-connection-classifier=both-addresses:2/0 action=mark-connection new-connection-mark=WAN1_conn passthrough=yes
+add chain=prerouting in-interface-list=LAN per-connection-classifier=both-addresses:2/1 action=mark-connection new-connection-mark=WAN2_conn passthrough=yes
+add chain=prerouting connection-mark=WAN1_conn action=mark-routing new-routing-mark=to_WAN1 passthrough=no
+add chain=prerouting connection-mark=WAN2_conn action=mark-routing new-routing-mark=to_WAN2 passthrough=no
+
+/ip/route
+add dst-address=0.0.0.0/0 gateway=${gw1} routing-table=to_WAN1
+add dst-address=0.0.0.0/0 gateway=${gw2} routing-table=to_WAN2
+`;
+  }
+
+  // Failover logic
+  if (failover === "RECURSIVE") {
+    routing += `
+# Recursive Failover
+/ip route
+add dst-address=8.8.8.8 gateway=${gw1} check-gateway=ping
+add dst-address=1.1.1.1 gateway=${gw2} check-gateway=ping
+add dst-address=0.0.0.0/0 gateway=8.8.8.8 distance=1
+add dst-address=0.0.0.0/0 gateway=1.1.1.1 distance=2
+`;
+  } else {
+    routing += `
+# Local Failover
+/ip route
+add dst-address=0.0.0.0/0 gateway=${gw1} distance=1
+add dst-address=0.0.0.0/0 gateway=${gw2} distance=2
+`;
+  }
+
+  document.getElementById("output1").value = basic.trim();
+  document.getElementById("output2").value = routing.trim();
+}
+</script>
+</body>
+</html>

@@ -20,17 +20,17 @@
     box-shadow:0 2px 5px rgba(0,0,0,.2);transition:.2s;
   }
   .home-btn:hover{background:#c8facc;}
-  main{max-width:700px;margin:25px auto;padding:15px;background:#fff;border-radius:14px;
+  main{max-width:800px;margin:25px auto;padding:20px;background:#fff;border-radius:14px;
        box-shadow:0 3px 8px rgba(0,0,0,0.1);}
   label{display:block;margin-top:10px;font-weight:500;}
-  input,select{width:100%;padding:8px;margin-top:4px;border:1px solid #ccc;
+  input,select,textarea{width:100%;padding:8px;margin-top:4px;border:1px solid #ccc;
                border-radius:6px;box-sizing:border-box;font-size:.9rem;}
   button{background:#4CAF50;color:#fff;border:none;padding:10px 18px;border-radius:8px;
          cursor:pointer;font-weight:bold;margin:10px 5px 0 0;}
   button:hover{background:#2e7d32;}
-  textarea{width:100%;height:150px;margin-top:10px;padding:8px;font-family:monospace;
-           font-size:.9rem;border-radius:8px;border:1px solid #ccc;resize:vertical;}
+  textarea{height:150px;font-family:monospace;font-size:.9rem;resize:vertical;}
   footer{text-align:center;color:#666;padding:15px;margin-top:30px;font-size:.85rem;}
+  .manual-block{border:1px solid #ddd;padding:10px;border-radius:8px;margin-top:10px;background:#f9f9f9;}
 </style>
 </head>
 <body>
@@ -42,8 +42,9 @@
 </header>
 
 <main>
-  <h2 style="text-align:center;color:#388E3C;">⚙️ Simple Policy Based Routing for Game</h2>
+  <h2 style="text-align:center;color:#388E3C;">⚙️ Policy Based Routing for Game Traffic</h2>
 
+  <!-- RouterOS & ISP Section -->
   <label>Versi RouterOS:</label>
   <select id="rosVer">
     <option value="6">RouterOS v6</option>
@@ -59,24 +60,37 @@
   <label>IP Gateway ISP:</label>
   <input id="ispGateway" placeholder="contoh: 172.16.0.1" value="172.16.0.1">
 
-  <label>Pilih Game:</label>
+  <!-- Game Preset -->
+  <label>Pilih Game Preset:</label>
   <select id="gameSelect">
     <option value="">-- Pilih Game --</option>
-    <option value="PUBG">PUBG (UDP 10000-20000)</option>
-    <option value="Mobile Legends">Mobile Legends (UDP 5000-5200)</option>
-    <option value="Free Fire">Free Fire (UDP 7000-7999)</option>
-    <option value="Call of Duty">Call of Duty Mobile (TCP/UDP 3013,7500-7999)</option>
-    <option value="Genshin">Genshin Impact (UDP 22101-22102)</option>
+    <option value="Mobile Legends">Mobile Legends</option>
+    <option value="Free Fire">Free Fire</option>
+    <option value="PUBG Mobile">PUBG Mobile</option>
+    <option value="Call of Duty">Call of Duty Mobile</option>
+    <option value="Arena of Valor">Arena of Valor (AOV)</option>
+    <option value="Stumble Guys">Stumble Guys</option>
+    <option value="Genshin Impact">Genshin Impact</option>
+    <option value="Clash of Clans">Clash of Clans / Royale</option>
+    <option value="League of Legends">League of Legends Mobile</option>
+    <option value="DOTA2">DOTA2</option>
+    <option value="FIFA Online">FIFA Online</option>
+    <option value="Point Blank Mobile">Point Blank Mobile</option>
+    <option value="LINE Get Rich">LINE Let’s Get Rich</option>
+    <option value="Dream League Soccer">Dream League Soccer</option>
+    <option value="Among Us">Among Us</option>
+    <option value="Roblox">Roblox</option>
     <option value="Manual">Manual Input</option>
   </select>
 
-  <div id="manualInput" style="display:none;">
-    <label>Nama Game Manual:</label>
-    <input id="manualName" placeholder="contoh: Apex Legends">
-    <label>Port Game Manual:</label>
-    <input id="manualPort" placeholder="contoh: 40000-40100,udp">
+  <!-- Manual Game Input Section -->
+  <div id="manualContainer" style="display:none;">
+    <h3>🎮 Game Manual</h3>
+    <div id="manualGameList"></div>
+    <button id="addManualBtn" type="button">+ Tambah Game Manual</button>
   </div>
 
+  <!-- QoS Settings -->
   <label>Priority (0=lowest, 1=highest):</label>
   <select id="priority">
     <option value="1" selected>1 (Highest)</option>
@@ -86,11 +100,11 @@
     <option value="8">8 (Lowest)</option>
   </select>
 
-  <label>Bandwidth Upload (kbps):</label>
-  <input id="bwUp" placeholder="contoh: 2048">
+  <label>Bandwidth Upload (default 5M):</label>
+  <input id="bwUp" placeholder="contoh: 5M">
 
-  <label>Bandwidth Download (kbps):</label>
-  <input id="bwDown" placeholder="contoh: 8192">
+  <label>Bandwidth Download (default 5M):</label>
+  <input id="bwDown" placeholder="contoh: 5M">
 
   <div style="text-align:center;margin-top:15px;">
     <button id="generateBtn">Generate Script</button>
@@ -108,29 +122,38 @@
 <footer>© 2025 dmibot | PBR Game Calculator</footer>
 
 <script>
-// === Pop-up Info Dua Bahasa ===
+// === Pop-up Dua Bahasa ===
 window.addEventListener('load',()=>{
   alert(
 "🇮🇩 Bahasa Indonesia\n"+
-"PBR Game Calculator by @dmibot\n\n"+
-"Tools ini digunakan untuk membuat konfigurasi otomatis Policy Based Routing (PBR) untuk trafik game. "+
-"Tersedia pilihan game populer dan mode manual port.\n\n"+
-"1️⃣ Bagian Basic menghasilkan konfigurasi dasar interface dan mangle.\n"+
-"2️⃣ Bagian Routing menghasilkan route policy untuk game tersebut.\n\n"+
+"Tools ini digunakan untuk membuat konfigurasi Policy Based Routing (PBR) untuk trafik game. "+
+"Termasuk daftar game populer + opsi manual game (multi input).\n\n"+
+"Gunakan tab dan tombol sesuai kebutuhan.\n\n"+
 "========================\n\n"+
 "🇬🇧 English Version\n"+
-"PBR Game Calculator by @dmibot\n\n"+
-"This tool automatically builds Policy Based Routing (PBR) configuration for game traffic. "+
-"It includes preset games and manual port options.\n\n"+
-"1️⃣ The Basic section generates base interface and mangle configuration.\n"+
-"2️⃣ The Routing section generates route policy for the selected game."
+"This tool builds Policy Based Routing (PBR) configuration for game traffic. "+
+"Includes popular game presets and multiple manual game options."
   );
 });
 
-// === Show manual input ===
+// === Manual Game Control ===
 document.getElementById('gameSelect').addEventListener('change',()=>{
-  const val=document.getElementById('gameSelect').value;
-  document.getElementById('manualInput').style.display=(val==='Manual')?'block':'none';
+  const val = document.getElementById('gameSelect').value;
+  document.getElementById('manualContainer').style.display = (val==='Manual') ? 'block' : 'none';
+});
+
+// Tambah Manual Game
+document.getElementById('addManualBtn').addEventListener('click',()=>{
+  const container = document.getElementById('manualGameList');
+  const div = document.createElement('div');
+  div.className = 'manual-block';
+  div.innerHTML = `
+    <label>Nama Game Manual:</label>
+    <input class="manualName" placeholder="contoh: Apex Legends">
+    <label>Port Game Manual:</label>
+    <textarea class="manualPort" placeholder="Format:\ntcp: 80,443\nudp: 7000-7999"></textarea>
+  `;
+  container.appendChild(div);
 });
 </script>
 

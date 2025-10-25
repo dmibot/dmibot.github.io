@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mikrotik Tools Portal | dmibot</title>
@@ -78,181 +77,33 @@
     margin: 40px 0 20px;
   }
 </style>
-  <link rel="stylesheet" href="./styles/base.css">
 </head>
 <body>
-  <main id="app"></main>
-
 <header>
   <img src="https://dmibot.github.io/Mikrotik.svg" alt="Mikrotik Logo">
   <h1>Mikrotik Tools Portal</h1>
   <p>by dmibot</p>
-  <div class="header-actions">
-    <div class="settings">
-      <button class="settings-btn" id="settings-btn"><span class="gear-ico">⚙️</span> <span id="settings-label">Settings</span></button>
-      <div class="dropdown" id="settings-dropdown">
-        <div class="row">
-          <label for="lang-select" id="lang-label">Language</label>
-          <select id="lang-select">
-            <option value="en">English</option>
-            <option value="id" selected>Indonesia</option>
-          </select>
-        </div>
-        <div class="hr"></div>
-        <div class="row"><span id="consent-label">Geolocation Consent</span>
-          <label class="switch">
-            <input type="checkbox" id="privacy-toggle-dd">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="muted" id="consent-state"></div>
-        <div class="hr"></div>
-        <button class="btn-reset" id="consent-reset">Reset</button>
-      </div>
-    </div>
-  </div>
 </header>
 
 <main>
   <div class="card">
     <h2>⚙️ Load Balance Generator</h2>
-    <button onclick="window.location.href='#/load-balance'">Open Tool</button>
+    <button onclick="window.location.href='mikrotik_load_balance_tools.html'">Open Tool</button>
   </div>
 
   <div class="card">
     <h2>🎮 PBR Game Calculator</h2>
-    <button onclick="window.location.href='#/pbr-game'">Open Tool</button>
+    <button onclick="window.location.href='pbr_game_calculator.html'">Open Tool</button>
   </div>
 
   <div class="card">
     <h2>🌐 PBR Sosmed Tool</h2>
-    <button onclick="window.location.href='#/sosmed'">Open Tool</button>
+    <button onclick="window.location.href='pbr_sosmed_tool.html'">Open Tool</button>
   </div>
 </main>
 
-
-<div class="privacy-row" id="privacy-toggle-row">
-  <span>Geolocation Consent</span>
-  <label class="switch">
-    <input type="checkbox" id="privacy-toggle">
-    <span class="slider"></span>
-  </label>
-  <span id="privacy-state" style="min-width:60px;text-align:left"></span>
-</div>
-
-  <footer>
+<footer>
   © 2025 dmibot | Mikrotik Tools Portal
 </footer>
-  <script type="module" src="./js/router.js"></script>
-<!-- Privacy/Consent Banner (themed) -->
-<div id="consent-banner" class="banner-privacy"><div><strong id="privacy-title">Privacy:</strong> <span id="privacy-desc">This site may call third-party APIs to show your public IP & geolocation.</span></div><div class="actions"><button id="consent-allow" class="btn">Allow</button><button id="consent-decline" class="btn" style="background:#ef4444">Decline</button></div></div>
-<div class="actions">
-    <button id="consent-allow" class="btn">Allow</button>
-    <button id="consent-decline" class="btn" style="background:#ef4444">Decline</button>
-  </div>
-</div>
-
-<script type="module">
-  import { getConsent, setConsent } from './modules/ui/consent.js';
-
-  const banner = document.getElementById('consent-banner');
-  const allowBtn = document.getElementById('consent-allow');
-  const declineBtn = document.getElementById('consent-decline');
-  const toggle = document.getElementById('privacy-toggle');
-  const stateLabel = document.getElementById('privacy-state');
-
-  function updateUI(val){
-    if (val === null) { stateLabel.textContent = 'Not set'; toggle.checked = false; }
-    else if (val)     { stateLabel.textContent = 'Allowed'; toggle.checked = true; }
-    else              { stateLabel.textContent = 'Declined'; toggle.checked = false; }
-  }
-
-  // Init banner visibility
-  const current = getConsent();
-  updateUI(current);
-  if (current === null && banner) banner.style.display = 'flex';
-
-  // Banner buttons
-  if (allowBtn) allowBtn.onclick = () => { setConsent(true); updateUI(true); banner.style.display='none'; };
-  if (declineBtn) declineBtn.onclick = () => { setConsent(false); updateUI(false); banner.style.display='none'; };
-
-  // Footer toggle
-  if (toggle) toggle.addEventListener('change', (e)=>{
-    const val = !!e.target.checked;
-    setConsent(val);
-    updateUI(val);
-  });
-</script>
-
-
-<script type="module">
-  import { getConsent, setConsent, clearConsent } from './modules/ui/consent.js';
-  import { getLang, setLang, t } from './modules/ui/i18n.js';
-
-  const banner = document.getElementById('consent-banner');
-  const allowBtn = document.getElementById('consent-allow');
-  const declineBtn = document.getElementById('consent-decline');
-
-  const settingsBtn = document.getElementById('settings-btn');
-  const dropdown = document.getElementById('settings-dropdown');
-  const langSelect = document.getElementById('lang-select');
-  const toggleDD = document.getElementById('privacy-toggle-dd');
-  const stateDD = document.getElementById('consent-state');
-  const resetBtn = document.getElementById('consent-reset');
-
-  const labelSettings = document.getElementById('settings-label');
-  const labelLang = document.getElementById('lang-label');
-  const labelConsent = document.getElementById('consent-label');
-  const privacyTitle = document.getElementById('privacy-title');
-  const privacyDesc = document.getElementById('privacy-desc');
-
-  function updateTexts(){
-    labelSettings.textContent = t('settings');
-    labelLang.textContent = t('language');
-    labelConsent.textContent = t('consent');
-    privacyTitle.textContent = t('privacyTitle');
-    privacyDesc.textContent = t('privacyDesc');
-    allowBtn.textContent = t('allow');
-    declineBtn.textContent = t('decline');
-    // language select option labels
-    for (const opt of langSelect.options) {
-      if (opt.value === 'en') opt.textContent = t('langEN');
-      if (opt.value === 'id') opt.textContent = t('langID');
-    }
-  }
-
-  function updateConsentUI(val){
-    if (val === null) { stateDD.textContent = t('statusNotSet'); toggleDD.checked = false; }
-    else if (val)     { stateDD.textContent = t('statusAllowed'); toggleDD.checked = true; }
-    else              { stateDD.textContent = t('statusDeclined'); toggleDD.checked = false; }
-  }
-
-  // Init language UI
-  langSelect.value = getLang();
-  updateTexts();
-
-  // Init consent UI
-  const current = getConsent();
-  updateConsentUI(current);
-  if (current === null && banner) banner.style.display = 'flex';
-
-  // Events
-  settingsBtn?.addEventListener('click', ()=> { dropdown.classList.toggle('open'); document.body.classList.toggle('settings-open', dropdown.classList.contains('open')); });
-  document.addEventListener('click', (e)=>{ if(!dropdown.contains(e.target) && !settingsBtn.contains(e.target)) dropdown.classList.remove('open'); });
-
-  allowBtn?.addEventListener('click', ()=>{ setConsent(true); updateConsentUI(true); banner.style.display = 'none'; document.dispatchEvent(new CustomEvent('dmibot:consent-change', { detail: true })); });
-  declineBtn?.addEventListener('click', ()=>{ setConsent(false); updateConsentUI(false); banner.style.display = 'none'; document.dispatchEvent(new CustomEvent('dmibot:consent-change', { detail: false })); });
-
-  toggleDD?.addEventListener('change', (e)=>{ const v = !!e.target.checked; setConsent(v); updateConsentUI(v); document.dispatchEvent(new CustomEvent('dmibot:consent-change', { detail: v })); });
-
-  langSelect?.addEventListener('change', (e)=>{ setLang(e.target.value); updateTexts(); });
-
-  resetBtn?.addEventListener('click', ()=>{
-    clearConsent();
-    updateConsentUI(null);
-    banner.style.display = 'flex';
-  });
-</script>
-
 </body>
 </html>

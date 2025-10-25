@@ -227,5 +227,445 @@ add name="cleanup_sosmed" on-event="/ip firewall address-list remove [find list~
   document.getElementById("soc_output").value = script.trim();
 }
 </script>
+
+<section class="card" style="margin-top:16px">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <strong id="tw-consent-label">Geolocation Consent</strong>
+    <label class="switch">
+      <input type="checkbox" id="tw-consent-toggle">
+      <span class="slider"></span>
+    </label>
+    <span id="tw-consent-state" class="muted"></span>
+  </div>
+</section>
+
+<script type="module">
+  import { copyText, toast } from './modules/ui/copy.js';
+
+  const provider = document.getElementById('dns-provider');
+  const nextdnsWrap = document.getElementById('nextdns-wrap');
+  const nextdnsId = document.getElementById('nextdns-id');
+  const servers  = document.getElementById('dns-servers');
+  const doh      = document.getElementById('doh-endpoint');
+  const verify   = document.getElementById('doh-verify');
+  const modeSel  = document.getElementById('dns-mode');
+  const bootstrap= document.getElementById('dns-bootstrap');
+  const preview  = document.getElementById('dns-preview');
+  const notes    = document.getElementById('dns-safety-notes');
+
+  const map = {
+    adguard: { servers: '94.140.14.14,94.140.15.15', doh: 'https://dns.adguard-dns.com/dns-query' },
+    cloudflare: { servers: '1.1.1.1,1.0.0.1', doh: 'https://cloudflare-dns.com/dns-query' },
+    google: { servers: '8.8.8.8,8.8.4.4', doh: 'https://dns.google/dns-query' },
+    custom: { servers: '', doh: '' },
+  };
+
+  provider.addEventListener('change', ()=>{
+    const m = map[provider.value] || map.adguard;
+    if (m.servers) servers.value = m.servers;
+    if (m.doh) doh.value = m.doh;
+    render();
+  });
+
+  [servers, doh, verify, modeSel, bootstrap].forEach(el=> el.addEventListener('input', render));
+
+      nextdnsId?.addEventListener('input', ()=>{
+        if (provider.value==='nextdns'){
+          const id = (nextdnsId.value||'').trim();
+          doh.value = id ? `https://dns.nextdns.io/${id}` : '';
+          render();
+        }
+      });
+
+  function render(){
+    const srv = (servers.value||'').trim();
+    const ep  = (doh.value||'').trim();
+    const ver = verify.checked ? 'yes' : 'no';
+    const mode= (modeSel.value||'doh');
+    const boot= (bootstrap.value||'').trim();
+
+    // Compose bootstrap info (comment only — RouterOS uses 'servers=' as bootstrap for DoH)
+    const bootComment = boot ? `# Bootstrap DNS: ${boot}` : '# Bootstrap DNS: (pakai "DNS Servers" di atas)';
+
+    let v7 = `# ${mode.toUpperCase()} — RouterOS v7 — ${provider.value.toUpperCase()}
+/ip dns
+set allow-remote-requests=yes \\ 
+    servers=${srv||'<set-servers>'} \\ 
+    cache-size=4096KiB max-udp-packet-size=1232
+${bootComment}
+`;
+
+    if(mode === 'doh'){
+      v7 += (ep ? `/ip dns set use-doh-server=${ep} verify-doh=${ver}\n` : `# DoH endpoint kosong — tidak mengaktifkan DoH\n`);
+    }else{
+      // DoT note: RouterOS native DoT belum tersedia. Rekomendasi: pakai proxy DoT lokal (AdGuard Home / Stubby) lalu arahkan /ip dns servers ke proxy itu.
+      v7 += `# DoT (DNS-over-TLS) tidak didukung native di /ip dns RouterOS saat ini.\n` +
+            `# Gunakan proxy DoT lokal (contoh AdGuard Home) dan set 'servers=' ke IP proxy lokal.\n` +
+            `# Contoh: servers=192.168.88.2 (proxy DoT menuju tls://dns.adguard-dns.com:853)\n`;
+    }
+    v7 += `/ip dns print`;
+
+    const v6 = `# DNS only — RouterOS v6 — ${provider.value.toUpperCase()}
+/ip dns
+set allow-remote-requests=yes \\ 
+    servers=${srv||'<set-servers>'} \\ 
+    cache-size=4096KiB max-udp-packet-size=1232
+/ip dns print`;
+
+    const rv = `# Revert cepat
+/ip dns set servers=1.1.1.1,1.0.0.1
+/ip dns set use-doh-server=""`;
+
+    preview.textContent = v7 + "\n\n" + v6 + "\n\n" + rv;
+
+    // Safety notes
+    const warnDoT = (mode === 'dot') ? 
+      'Note: DoT tidak didukung native di RouterOS /ip dns. Disarankan menjalankan proxy DoT (AdGuard Home/Stubby) di host lokal/router yang support container, lalu arahkan /ip dns servers ke IP proxy.' 
+      : '';
+    const warnDoH = (mode === 'doh' && !ep) ? 
+      'Note: DoH endpoint kosong — hanya DNS biasa yang aktif.' 
+      : '';
+    const noteBoot = 'Jika DoH dipakai, RouterOS akan menggunakan nilai "servers=" sebagai bootstrap untuk resolve host DoH saat awal.';
+    notes.textContent = [warnDoT, warnDoH, noteBoot].filter(Boolean).join(' ');
+    return { v7, v6, rv };
+  }
+
+  const out = { current: render() };
+
+  document.getElementById('copy-dns-v7').addEventListener('click', async()=>{
+    out.current = render();
+    await copyText(out.current.v7);
+    toast('Copied: v7 (' + (modeSel.value||'doh').toUpperCase() + ')');
+  });
+  document.getElementById('copy-dns-v6').addEventListener('click', async()=>{
+    out.current = render();
+    await copyText(out.current.v6);
+    toast('Copied: v6 (DNS only)');
+  });
+  document.getElementById('copy-dns-revert').addEventListener('click', async()=>{
+    out.current = render();
+    await copyText(out.current.rv);
+    toast('Copied: Revert');
+  });
+
+  render();
+</script>
+
+
+
+<section class="card" style="margin-top:16px">
+  <h3 style="margin:0 10px 10px 0;display:inline-block">Presets</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <select id="pz-list" class="input" style="max-width:220px"></select>
+    <input id="pz-name" class="input" placeholder="Preset name" style="max-width:220px">
+    <button class="btn" id="pz-save">Save</button>
+    <button class="btn" id="pz-load" style="background:#6366f1">Load</button>
+    <button class="btn" id="pz-del" style="background:#ef4444">Delete</button>
+  </div>
+</section>
+<script type="module">
+  import { listPresets, savePreset, loadPreset, deletePreset, serializeScope, applyScope } from './modules/ui/presets.js';
+  const KEY = document.title.replace(/\s+/g,'_').toLowerCase() || 'dmibot_tool';
+  const list = document.getElementById('pz-list');
+  const name = document.getElementById('pz-name');
+  const btnSave = document.getElementById('pz-save');
+  const btnLoad = document.getElementById('pz-load');
+  const btnDel  = document.getElementById('pz-del');
+
+  function refresh(){
+    const items = listPresets(KEY);
+    list.innerHTML = items.map(n=>`<option value="${n}">${n}</option>`).join('');
+  }
+  refresh();
+
+  btnSave?.addEventListener('click', ()=>{
+    const nm = name.value.trim() || prompt('Preset name?');
+    if(!nm) return;
+    const data = serializeScope(document);
+    savePreset(KEY, nm, data);
+    refresh(); name.value = nm; alert('Preset saved: '+nm);
+  });
+  btnLoad?.addEventListener('click', ()=>{
+    const nm = name.value.trim() || list.value;
+    if(!nm){ alert('Select or type a preset name'); return; }
+    const data = loadPreset(KEY, nm);
+    if(!data){ alert('Preset not found'); return; }
+    applyScope(data, document);
+    alert('Loaded: '+nm);
+  });
+  btnDel?.addEventListener('click', ()=>{
+    const nm = name.value.trim() || list.value;
+    if(!nm){ alert('Select or type a preset name'); return; }
+    if(!confirm('Delete preset '+nm+'?')) return;
+    deletePreset(KEY, nm); refresh(); alert('Deleted: '+nm);
+  });
+  list?.addEventListener('change', ()=>{ name.value = list.value; });
+</script>
+
+
+<section class="card">
+  <h3 style="margin:0 0 8px">AdGuard DNS / DoH Helper</h3>
+  <p style="margin:0 0 10px;opacity:.8">Generate cepat skrip DNS AdGuard untuk RouterOS v7 (DoH) & v6.</p>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <button class="btn" id="copy-adg-v7">Copy ROS v7 (DNS+DoH)</button>
+    <button class="btn" id="copy-adg-v6" style="background:#6366f1">Copy ROS v6 (DNS only)</button>
+    <button class="btn" id="copy-adg-revert" style="background:#475569">Copy Revert</button>
+  </div>
+
+  <pre class="mono" id="adg-preview" style="white-space:pre-wrap"></pre>
+</section>
+
+<script type="module">
+  import { copyText, toast } from './modules/ui/copy.js';
+
+  const V7 = `# AdGuard DNS + DoH (ROS v7)
+/ip dns
+set allow-remote-requests=yes \\
+    servers=94.140.14.14,94.140.15.15 \\
+    cache-size=4096KiB max-udp-packet-size=1232
+/ip dns set use-doh-server=https://dns.adguard-dns.com/dns-query verify-doh=yes
+/ip dns set doh-max-concurrent-queries=100
+/ip dns print`;
+
+  const V6 = `# AdGuard DNS (ROS v6)
+/ip dns
+set allow-remote-requests=yes \\
+    servers=94.140.14.14,94.140.15.15 \\
+    cache-size=4096KiB max-udp-packet-size=1232
+/ip dns print`;
+
+  const RV = `# Revert cepat
+/ip dns set servers=1.1.1.1,1.0.0.1
+/ip dns set use-doh-server=""`;
+
+  const preview = document.getElementById('adg-preview');
+  const btn7 = document.getElementById('copy-adg-v7');
+  const btn6 = document.getElementById('copy-adg-v6');
+  const btnR = document.getElementById('copy-adg-revert');
+
+  const show = t => { preview.textContent = t; };
+  show(V7);
+
+  btn7.addEventListener('click', async()=>{ await copyText(V7); show(V7); toast('Copied: ROS v7 (DNS+DoH)'); });
+  btn6.addEventListener('click', async()=>{ await copyText(V6); show(V6); toast('Copied: ROS v6 (DNS)'); });
+  btnR.addEventListener('click',  async()=>{ await copyText(RV); show(RV); toast('Copied: Revert'); });
+</script>
+
+
+<section class="card">
+  <h3 style="margin:0 0 8px">DNS / DoH Helper (AdGuard • Cloudflare • Google • Custom)</h3>
+  <p style="margin:0 0 10px;opacity:.8">Generate skrip cepat untuk RouterOS v7 (DoH) & v6 (DNS). Pilih provider atau isikan endpoint DoH kustom.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px">
+    <div>
+      <label class="label">Provider</label>
+      <select class="input" id="dns-provider">
+        <option value="adguard" selected>AdGuard</option>
+        <option value="cloudflare">Cloudflare</option>
+        <option value="google">Google</option>
+        <option value="quad9">Quad9</option>
+        <option value="nextdns">NextDNS</option>
+        <option value="opendns">OpenDNS</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    <div>
+      <label class="label">DNS Servers (comma separated)</label>
+      <input class="input" id="dns-servers" value="94.140.14.14,94.140.15.15" placeholder="e.g. 1.1.1.1,1.0.0.1">
+    </div>
+    <div>
+      <label class="label">DoH Endpoint (ROS v7)</label>
+      <input class="input" id="doh-endpoint" value="https://dns.adguard-dns.com/dns-query" placeholder="https://dns.example.com/dns-query">
+    </div>
+    <div id="nextdns-wrap" style="display:none">
+      <label class="label">NextDNS ID</label>
+      <input class="input" id="nextdns-id" placeholder="abcd12 (from dashboard.nextdns.io)">
+      <div style="font-size:.9rem;opacity:.75;margin-top:6px">DoH: https://dns.nextdns.io/&lt;ID&gt;</div>
+    </div>
+    <div>
+      <label class="label">Verify DoH</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label class="switch"><input type="checkbox" id="doh-verify" checked><span class="slider"></span></label>
+        <span style="opacity:.8">/ip dns set verify-doh=yes</span>
+      </div>
+    </div>
+    <div>
+      <label class="label">Bootstrap DNS (optional)</label>
+      <input class="input" id="dns-bootstrap" placeholder="e.g. 9.9.9.9,149.112.112.112">
+      <div style="font-size:.9rem;opacity:.75;margin-top:6px">Dipakai untuk resolve host DoH saat pertama kali. Jika kosong, Router akan pakai nilai di "DNS Servers".</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <button class="btn" id="copy-dns-v7">Copy v7 (DNS+DoH)</button>
+    <button class="btn" id="copy-dns-v6" style="background:#6366f1">Copy v6 (DNS only)</button>
+    <button class="btn" id="copy-dns-revert" style="background:#475569">Copy Revert</button>
+  </div>
+
+  <pre class="mono" id="dns-preview" style="white-space:pre-wrap"></pre>
+<div id="dns-safety-notes" style="margin-top:10px;opacity:.85;font-size:.92rem"></div>
+</section>
+
+<script type="module">
+  import { copyText, toast } from './modules/ui/copy.js';
+
+  const provider = document.getElementById('dns-provider');
+  const servers  = document.getElementById('dns-servers');
+  const doh      = document.getElementById('doh-endpoint');
+  const verify   = document.getElementById('doh-verify');
+  const preview  = document.getElementById('dns-preview');
+
+  const map = {
+    adguard: { servers: '94.140.14.14,94.140.15.15', doh: 'https://dns.adguard-dns.com/dns-query' },
+    cloudflare: { servers: '1.1.1.1,1.0.0.1', doh: 'https://cloudflare-dns.com/dns-query' },
+    google: { servers: '8.8.8.8,8.8.4.4', doh: 'https://dns.google/dns-query' },
+    custom: { servers: '', doh: '' },
+  };
+
+  provider.addEventListener('change', ()=>{
+    const m = map[provider.value] || map.adguard;
+    if (m.servers) servers.value = m.servers;
+    if (m.doh) doh.value = m.doh;
+    render();
+  });
+
+  [servers, doh, verify].forEach(el=> el.addEventListener('input', render));
+
+  function render(){
+    const srv = (servers.value||'').trim();
+    const ep  = (doh.value||'').trim();
+    const ver = verify.checked ? 'yes' : 'no';
+
+    const v7 = `# DNS + DoH (ROS v7) — ${provider.value.toUpperCase()}
+/ip dns
+set allow-remote-requests=yes \\ 
+    servers=${srv||'<set-servers>'} \\ 
+    cache-size=4096KiB max-udp-packet-size=1232
+` + (ep ? `/ip dns set use-doh-server=${ep} verify-doh=${ver}
+` : `# DoH endpoint kosong — tidak mengaktifkan DoH
+`) + 
+`/ip dns print`;
+
+    const v6 = `# DNS only (ROS v6) — ${provider.value.toUpperCase()}
+/ip dns
+set allow-remote-requests=yes \\ 
+    servers=${srv||'<set-servers>'} \\ 
+    cache-size=4096KiB max-udp-packet-size=1232
+/ip dns print`;
+
+    const rv = `# Revert cepat
+/ip dns set servers=1.1.1.1,1.0.0.1
+/ip dns set use-doh-server=""`;
+
+    preview.textContent = v7 + "\n\n" + v6 + "\n\n" + rv;
+    return { v7, v6, rv };
+  }
+
+  const out = { current: render() };
+
+  document.getElementById('copy-dns-v7').addEventListener('click', async()=>{
+    out.current = render();
+    await copyText(out.current.v7);
+    toast('Copied: v7 (DNS+DoH)');
+  });
+  document.getElementById('copy-dns-v6').addEventListener('click', async()=>{
+    out.current = render();
+    await copyText(out.current.v6);
+    toast('Copied: v6 (DNS only)');
+  });
+  document.getElementById('copy-dns-revert').addEventListener('click', async()=>{
+    out.current = render();
+    await copyText(out.current.rv);
+    toast('Copied: Revert');
+  });
+
+  render();
+</script>
+
+
+<section class="card" style="margin-top:16px">
+  <h3 style="margin:0 0 8px">DoT Proxy Helper (AdGuard Home)</h3>
+  <p style="margin:0 0 10px;opacity:.8">Menjalankan proxy DoT lokal (AdGuard Home) lalu arahkan RouterOS ke proxy via /ip dns servers. Aman karena tidak expose resolver ke publik.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px">
+    <div>
+      <label class="label">Proxy LAN IP</label>
+      <input class="input" id="dot-proxy-ip" placeholder="192.168.88.2">
+      <div style="font-size:.9rem;opacity:.75;margin-top:6px">Host dimana AdGuard Home jalan (PC/RPi/VM). Bind hanya ke LAN.</div>
+    </div>
+    <div>
+      <label class="label">Upstream DoT Host</label>
+      <input class="input" id="dot-upstream-host" value="dns.adguard-dns.com" placeholder="tls hostname e.g. dns.quad9.net">
+    </div>
+    <div>
+      <label class="label">Upstream DoT Port</label>
+      <input class="input" id="dot-upstream-port" value="853" type="number">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <button class="btn" id="copy-dot-compose">Copy docker-compose.yml</button>
+    <button class="btn" id="copy-dot-mikrotik" style="background:#6366f1">Copy Mikrotik /ip dns</button>
+    <button class="btn" id="copy-dot-hardening" style="background:#475569">Copy Hardening Notes</button>
+  </div>
+
+  <pre class="mono" id="dot-preview" style="white-space:pre-wrap"></pre>
+</section>
+
+<script type="module">
+  import { copyText, toast } from './modules/ui/copy.js';
+  const ip   = document.getElementById('dot-proxy-ip');
+  const host = document.getElementById('dot-upstream-host');
+  const port = document.getElementById('dot-upstream-port');
+  const out  = document.getElementById('dot-preview');
+
+  function render(){
+    const PROXY = (ip.value||'<lan-ip>').trim();
+    const HOST  = (host.value||'dns.adguard-dns.com').trim();
+    const PORT  = (port.value||'853').trim();
+
+    const compose = `version: '3.8'
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./agh-work:/opt/adguardhome/work
+      - ./agh-conf:/opt/adguardhome/conf
+    command: ["--no-check-update"]
+# Setelah container running, buka http://${PROXY}:3000 untuk wizard,
+# set upstream ke tls://${HOST}:${PORT}, bind hanya di LAN, dan matikan exposed WAN.`;
+
+    const mik = `/ip dns
+set allow-remote-requests=yes servers=${PROXY} cache-size=4096KiB max-udp-packet-size=1232
+/ip dns print`;
+
+    const notes = `HARDENING NOTES
+- Pastikan AdGuard Home bind hanya ke interface LAN (jangan ke 0.0.0.0 di WAN).
+- Firewall: block UDP/TCP/53 dari internet (jangan jadi open resolver).
+- Nonaktifkan query dari interface publik; hanya LAN allowed.
+- Aktifkan qname minimization & DNSSEC validation (di Settings AdGuard.
+- Batasi logging, disable query log kalau tidak perlu.
+- Update rutin image adguardhome:latest.`;
+
+    out.textContent = compose + "\n\n" + mik + "\n\n" + notes;
+    return { compose, mik, notes };
+  }
+
+  let cur = render();
+  ['input','change'].forEach(ev=>{
+    ip.addEventListener(ev, ()=>{ cur = render(); });
+    host.addEventListener(ev, ()=>{ cur = render(); });
+    port.addEventListener(ev, ()=>{ cur = render(); });
+  });
+
+  document.getElementById('copy-dot-compose').addEventListener('click', async()=>{ cur = render(); await copyText(cur.compose); toast('Copied docker-compose.yml'); });
+  document.getElementById('copy-dot-mikrotik').addEventListener('click', async()=>{ cur = render(); await copyText(cur.mik); toast('Copied Mikrotik /ip dns'); });
+  document.getElementById('copy-dot-hardening').addEventListener('click', async()=>{ cur = render(); await copyText(cur.notes); toast('Copied Hardening Notes'); });
+</script>
+
 </body>
 </html>

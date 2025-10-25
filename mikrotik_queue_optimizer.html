@@ -36,14 +36,53 @@
 </section>
 
 <section class="card" style="margin-top:16px">
+  <h3 style="margin:0 0 10px">Presets</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <input class="input" id="preset-name" placeholder="Preset name (e.g. 100M/50M 25 users)" style="max-width:340px">
+    <button class="btn" id="preset-save">Save</button>
+    <select class="input" id="preset-select" style="max-width:240px"></select>
+    <button class="btn" id="preset-load" style="background:#10b981">Load</button>
+    <button class="btn" id="preset-delete" style="background:#ef4444">Delete</button>
+  </div>
+</section>
+
+<section class="card" style="margin-top:16px">
   <h3 style="margin:0 0 10px">Your IP & Location</h3>
   <div id="ipBox">Loading IP…</div>
 </section>
+
+
+<section class="card" style="margin-top:16px">
+  <h3 style="margin:0 0 10px">Latency Tester</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <select class="input" id="lt-preset" style="max-width:260px"><option value="">--Preset Targets--</option><option value="https://1.1.1.1/">Cloudflare DNS (1.1.1.1)</option><option value="https://8.8.8.8/">Google DNS (8.8.8.8)</option><option value="https://94.140.14.14/">AdGuard DNS (94.140.14.14)</option><option value="https://94.140.15.15/">AdGuard DNS (94.140.15.15)</option><option value="https://dns.adguard-dns.com/">AdGuard DoH</option><option value="https://www.google.com/">Google</option><option value="https://cloudflare.com/">Cloudflare</option><option value="https://github.com/">GitHub</option></select><input class="input" id="lt-url" placeholder="https://1.1.1.1/" style="min-width:260px">
+    <input class="input" id="lt-attempts" type="number" value="5" style="width:120px">
+    <button class="btn" id="lt-run">Run</button>
+  </div>
+  <pre class="mono" id="lt-out" style="white-space:pre-wrap;margin-top:10px"></pre>
+  <div style="margin-top:8px;opacity:.8">Tip: test requires internet & respects your Geolocation consent.</div>
+</section>
+
+
+
+<section class="card" style="margin-top:16px">
+  <h3 style="margin:0 10px 10px 0;display:inline-block">Presets</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <select id="pz-list" class="input" style="max-width:220px"></select>
+    <input id="pz-name" class="input" placeholder="Preset name" style="max-width:220px">
+    <button class="btn" id="pz-save">Save</button>
+    <button class="btn" id="pz-load" style="background:#6366f1">Load</button>
+    <button class="btn" id="pz-del" style="background:#ef4444">Delete</button>
+  </div>
+</section>
+
 
 <script type="module">
   import { calcPcq } from './modules/mikrotik/pcq.js';
   import { copyText, toast } from './modules/ui/copy.js';
   import { getPublicIP, getIPGeo } from './modules/net/ip.js';
+  import { pingAvg, DEFAULT_TARGETS } from './modules/net/ping.js';
+  import { listPresets, savePreset, loadPreset, deletePreset, serializeScope, applyScope } from './modules/ui/presets.js';
 
   const $ = (id)=>document.getElementById(id);
 
@@ -74,6 +113,83 @@
 
     $('out').textContent = script;
   });
+
+
+
+function respectConsent(){ try{ return localStorage.getItem('dmibot:consent_geo')==='true'; }catch{ return false; } }
+
+async function initLatency(){
+  const urlEl = $('lt-url');
+  const attEl = $('lt-attempts');
+  const out = $('lt-out');
+  const btn = $('lt-run');
+  if(!urlEl) return;
+
+  urlEl.value = DEFAULT_TARGETS[0];
+
+  btn.addEventListener('click', async()=>{
+    out.textContent = '';
+    if(!respectConsent()){ out.textContent = 'Denied by privacy setting. Enable Geolocation Consent in Settings.'; return; }
+    const url = urlEl.value.trim();
+    const n = Math.max(1, parseInt(attEl.value||'5',10));
+    out.textContent = `Pinging ${url} x${n}...`;
+    const r = await pingAvg(url, n, 2500);
+    const lines = [];
+    lines.push(`URL: ${r.url}`);
+    lines.push(`Attempts: ${r.attempts}, Success: ${r.success}, Loss: ${r.loss.toFixed(0)}%`);
+    if(r.avg!=null) lines.push(`Avg: ${r.avg.toFixed(1)} ms (min ${r.min.toFixed(1)} ms / max ${r.max.toFixed(1)} ms)`);
+    out.textContent = lines.join('\n');
+  });
+}
+
+function initPresets(){
+  const KEY='queueOptimizer';
+  const list = $('pz-list');
+  const name = $('pz-name');
+  const btnSave = $('pz-save');
+  const btnLoad = $('pz-load');
+  const btnDel = $('pz-del');
+  if(!list) return;
+
+  function refresh(){
+    const items = listPresets(KEY);
+    list.innerHTML = items.map(n=>`<option value="${n}">${n}</option>`).join('');
+  }
+  refresh();
+
+  btnSave.addEventListener('click', ()=>{
+    const nm = name.value.trim() || prompt('Preset name?');
+    if(!nm) return;
+    const data = serializeScope(document);
+    savePreset(KEY, nm, data);
+    refresh();
+    name.value = nm;
+    alert('Preset saved: '+nm);
+  });
+
+  btnLoad.addEventListener('click', ()=>{
+    const nm = name.value.trim() || list.value;
+    if(!nm){ alert('Select or type a preset name'); return; }
+    const data = loadPreset(KEY, nm);
+    if(!data){ alert('Preset not found'); return; }
+    applyScope(data, document);
+    alert('Loaded: '+nm);
+  });
+
+  btnDel.addEventListener('click', ()=>{
+    const nm = name.value.trim() || list.value;
+    if(!nm){ alert('Select or type a preset name'); return; }
+    if(!confirm('Delete preset '+nm+'?')) return;
+    deletePreset(KEY, nm);
+    refresh();
+    alert('Deleted: '+nm);
+  });
+
+  list.addEventListener('change', ()=>{ name.value = list.value; });
+}
+
+initLatency();
+initPresets();
 
   $('copyBtn').addEventListener('click', async()=>{
     const t = $('out').textContent.trim();

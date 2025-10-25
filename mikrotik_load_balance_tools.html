@@ -121,5 +121,98 @@ function copyAll(){
 <!-- module scripts -->
 <script src="modules/lb_basic_setup.js"></script>
 <script src="modules/lb_routing_pcc.js"></script>
+
+<section class="card" style="margin-top:16px">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <strong id="tw-consent-label">Geolocation Consent</strong>
+    <label class="switch">
+      <input type="checkbox" id="tw-consent-toggle">
+      <span class="slider"></span>
+    </label>
+    <span id="tw-consent-state" class="muted"></span>
+  </div>
+</section>
+<script type="module">
+  import { getConsent, setConsent } from './modules/ui/consent.js';
+  import { t } from './modules/ui/i18n.js';
+  const label = document.getElementById('tw-consent-label');
+  const toggle = document.getElementById('tw-consent-toggle');
+  const state = document.getElementById('tw-consent-state');
+
+  function updateTexts(){
+    label.textContent = t('consent');
+  }
+  function updateState(val){
+    if (val === null){ state.textContent = t('statusNotSet'); toggle.checked = false; }
+    else if (val){ state.textContent = t('statusAllowed'); toggle.checked = true; }
+    else { state.textContent = t('statusDeclined'); toggle.checked = false; }
+  }
+
+  updateTexts();
+  const cur = getConsent();
+  updateState(cur);
+
+  toggle.addEventListener('change', (e)=>{
+    const v = !!e.target.checked;
+    setConsent(v);
+    updateState(v);
+    document.dispatchEvent(new CustomEvent('dmibot:consent-change', { detail: v }));
+  });
+
+  document.addEventListener('dmibot:consent-change', (e)=>{
+    updateState(e.detail);
+  });
+</script>
+
+
+<section class="card" style="margin-top:16px">
+  <h3 style="margin:0 10px 10px 0;display:inline-block">Presets</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <select id="pz-list" class="input" style="max-width:220px"></select>
+    <input id="pz-name" class="input" placeholder="Preset name" style="max-width:220px">
+    <button class="btn" id="pz-save">Save</button>
+    <button class="btn" id="pz-load" style="background:#6366f1">Load</button>
+    <button class="btn" id="pz-del" style="background:#ef4444">Delete</button>
+  </div>
+</section>
+<script type="module">
+  import { listPresets, savePreset, loadPreset, deletePreset, serializeScope, applyScope } from './modules/ui/presets.js';
+  const KEY = document.title.replace(/\s+/g,'_').toLowerCase() || 'dmibot_tool';
+  const list = document.getElementById('pz-list');
+  const name = document.getElementById('pz-name');
+  const btnSave = document.getElementById('pz-save');
+  const btnLoad = document.getElementById('pz-load');
+  const btnDel  = document.getElementById('pz-del');
+
+  function refresh(){
+    const items = listPresets(KEY);
+    list.innerHTML = items.map(n=>`<option value="${n}">${n}</option>`).join('');
+  }
+  refresh();
+
+  btnSave?.addEventListener('click', ()=>{
+    const nm = name.value.trim() || prompt('Preset name?');
+    if(!nm) return;
+    const data = serializeScope(document);
+    savePreset(KEY, nm, data);
+    refresh(); name.value = nm; alert('Preset saved: '+nm);
+  });
+  btnLoad?.addEventListener('click', ()=>{
+    const nm = name.value.trim() || list.value;
+    if(!nm){ alert('Select or type a preset name'); return; }
+    const data = loadPreset(KEY, nm);
+    if(!data){ alert('Preset not found'); return; }
+    applyScope(data, document);
+    alert('Loaded: '+nm);
+  });
+  btnDel?.addEventListener('click', ()=>{
+    const nm = name.value.trim() || list.value;
+    if(!nm){ alert('Select or type a preset name'); return; }
+    if(!confirm('Delete preset '+nm+'?')) return;
+    deletePreset(KEY, nm); refresh(); alert('Deleted: '+nm);
+  });
+  list?.addEventListener('change', ()=>{ name.value = list.value; });
+</script>
+
 </body>
 </html>

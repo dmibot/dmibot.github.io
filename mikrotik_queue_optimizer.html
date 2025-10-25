@@ -1,0 +1,83 @@
+<!-- mikrotik_queue_optimizer.html -->
+<section class="card">
+  <h2 style="margin:0 0 10px">Mikrotik Queue Optimizer</h2>
+  <p style="margin:0 0 12px;opacity:.8">PCQ auto generator (client-side)</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+    <div>
+      <label class="label">Total Download (Mbps)</label>
+      <input class="input" id="bwDown" type="number" placeholder="100" value="100" />
+    </div>
+    <div>
+      <label class="label">Total Upload (Mbps)</label>
+      <input class="input" id="bwUp" type="number" placeholder="50" value="50" />
+    </div>
+    <div>
+      <label class="label">Active Users</label>
+      <input class="input" id="users" type="number" placeholder="25" value="25" />
+    </div>
+    <div>
+      <label class="label">Packet Size (bytes)</label>
+      <input class="input" id="pkt" type="number" placeholder="1500" value="1500" />
+    </div>
+    <div>
+      <label class="label">Delay (ms)</label>
+      <input class="input" id="delay" type="number" placeholder="10" value="10" />
+    </div>
+    <div>
+      <label class="label">Queue Priority (1-8)</label>
+      <input class="input" id="prio" type="number" min="1" max="8" value="4" />
+    </div>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" id="genBtn">Generate Script</button>
+    <button class="btn" id="copyBtn" style="background:#0ea5e9">Copy</button>
+  </div>
+  <pre class="mono" id="out" style="white-space:pre-wrap;margin-top:12px"></pre>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <h3 style="margin:0 0 10px">Your IP & Location</h3>
+  <div id="ipBox">Loading IP…</div>
+</section>
+
+<script type="module">
+  import { calcPcq } from './modules/mikrotik/pcq.js';
+  import { copyText, toast } from './modules/ui/copy.js';
+  import { getPublicIP, getIPGeo } from './modules/net/ip.js';
+
+  const $ = (id)=>document.getElementById(id);
+
+  async function showIP(){
+    try{
+      const ip = await getPublicIP();
+      const geo = await getIPGeo(ip);
+      $('ipBox').textContent = `IP: ${ip} — ${geo.city||'Unknown'}, ${geo.country_name||geo.country||''}`;
+    }catch{ $('ipBox').textContent='Unable to fetch IP info'; }
+  }
+  try{
+    if(localStorage.getItem('dmibot:consent_geo')==='true'){ showIP(); }
+  }catch{}
+
+  $('genBtn').addEventListener('click', ()=>{
+    const down = parseFloat($('bwDown').value||'0');
+    const up   = parseFloat($('bwUp').value||'0');
+    const users= parseInt($('users').value||'1',10);
+    const pkt  = parseInt($('pkt').value||'1500',10);
+    const dly  = parseFloat($('delay').value||'10');
+    const prio = Math.min(Math.max(parseInt($('prio').value||'4',10),1),8);
+
+    if(!down||!up||!users){ toast('Isi bandwidth & users dengan benar'); return; }
+
+    const { rateDown, rateUp, pcqLimit, pcqTotal } = calcPcq({ downMbps:down, upMbps:up, users, pktBytes:pkt, delayMs:dly });
+
+    const script = `# ====== DMIBOT Queue Type Optimizer ======\n/queue type\nadd kind=pcq name=pcq-download pcq-classifier=dst-address \\\npcq-rate=${rateDown} pcq-limit=${pcqLimit} pcq-total-limit=${pcqTotal}\n\nadd kind=pcq name=pcq-upload pcq-classifier=src-address \\\npcq-rate=${rateUp} pcq-limit=${pcqLimit} pcq-total-limit=${pcqTotal}\n\n/queue tree\nadd name=Download parent=global queue=pcq-download priority=${prio}\nadd name=Upload parent=global queue=pcq-upload priority=${prio}\n# Notes: Total ${down}M/${up}M, Users ${users}, Pkt ${pkt}B, Delay ${dly}ms`;
+
+    $('out').textContent = script;
+  });
+
+  $('copyBtn').addEventListener('click', async()=>{
+    const t = $('out').textContent.trim();
+    if(!t){ toast('Belum ada output'); return; }
+    await copyText(t); toast('Script copied!');
+  });
+</script>

@@ -1,115 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mikrotik Tools Portal | dmibot</title>
-<link rel="icon" href="https://dmibot.github.io/Mikrotik.svg">
-<style>
-  body {
-    margin: 0;
-    font-family: "Segoe UI", sans-serif;
-    background-color: #f8fff8;
-    color: #333;
-  }
-  header {
-    background-color: #4CAF50;
-    color: white;
-    text-align: center;
-    padding: 30px 10px;
-    border-bottom: 6px solid #388E3C;
-  }
-  header img {
-    width: 90px;
-    vertical-align: middle;
-  }
-  header h1 {
-    margin: 12px 0 4px;
-    font-size: 2rem;
-  }
-  header p {
-    margin: 0;
-    font-size: 1rem;
-    opacity: 0.9;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mikrotik Tools Portal | dmibot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
 
-  main {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-    text-align: center;
-  }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
 
-  .card {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    margin: 20px 0;
-    padding: 25px;
-    transition: 0.25s ease;
-  }
-  .card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-  }
-  .card h2 {
-    color: #388E3C;
-    margin-bottom: 15px;
-  }
-  .card button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .card button:hover {
-    background-color: #2e7d32;
-  }
+        h2 {
+            text-align: center;
+        }
 
-  footer {
-    text-align: center;
-    font-size: 0.9rem;
-    color: #555;
-    margin: 40px 0 20px;
-  }
-</style>
+        .card {
+            background-color: #f4f7f6;
+            margin: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-<header>
-  <img src="https://dmibot.github.io/Mikrotik.svg" alt="Mikrotik Logo">
-  <h1>Mikrotik Tools Portal</h1>
-  <p>by dmibot</p>
-</header>
 
-<main>
-  <div class="card">
-    <h2>⚙️ Load Balance Generator</h2>
-    <button onclick="window.location.href='mikrotik_load_balance_tools.html'">Open Tool</button>
-  </div>
+    <div class="container">
+        <h2>Mikrotik Tools Portal</h2>
 
-  <div class="card">
-    <h2>🎮 PBR Game Calculator</h2>
-    <button onclick="window.location.href='pbr_game_calculator.html'">Open Tool</button>
-  </div>
+        <div class="card">
+            <h3>⚙️ Load Balance Generator</h3>
+            <button onclick="window.location.href='mikrotik_load_balance_tools.html'">Open Tool</button>
+        </div>
+        
+        <div class="card">
+            <h3>🎮 PBR Game Calculator</h3>
+            <button onclick="window.location.href='pbr_game_calculator.html'">Open Tool</button>
+        </div>
 
-  <div class="card">
-    <h2>🌐 PBR Sosmed Tool</h2>
-    <button onclick="window.location.href='pbr_sosmed_tool.html'">Open Tool</button>
-  </div>
+        <div class="card">
+            <h3>🌐 PBR Sosmed Tool</h3>
+            <button onclick="window.location.href='pbr_sosmed_tool.html'">Open Tool</button>
+        </div>
+    </div>
 
-  <!-- Tool baru: Load Balancer Testing Tool -->
-  <div class="card">
-    <h2>🧪 Load Balancer Testing Tool</h2>
-    <button onclick="window.location.href='load_balancer_testing.html'">Open Tool</button>
-  </div>
-</main>
-
-<footer>
-  © 2025 dmibot | Mikrotik Tools Portal
-</footer>
 </body>
 </html>

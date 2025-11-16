@@ -2,7 +2,7 @@
 
 Portal web untuk berbagai generator konfigurasi Mikrotik RouterOS, dibuat oleh **dmibot**.
 
-🌐 **Live Site:** [https://dmibot.github.io/mikrotik_tools_portal.html](https://dmibot.github.io/mikrotik_tools_portal.html)
+🌐 **Live Site:** [https://dmibot.github.io/](https://dmibot.github.io/)
 
 ## 🧰 Tools yang tersedia
 1. **Load Balance Generator**

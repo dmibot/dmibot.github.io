@@ -1,155 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PBR Game Calculator | dmibot</title>
-<link rel="icon" href="https://dmibot.github.io/Mikrotik.svg">
-<style>
-  body{margin:0;font-family:"Segoe UI",sans-serif;background:#f8fff8;color:#333;}
-  header{
-    background:#4CAF50;color:#fff;text-align:center;position:relative;
-    padding:25px 10px;border-bottom:5px solid #388E3C;
-  }
-  header img{width:70px;vertical-align:middle;}
-  header h1{margin:10px 0 5px;font-size:1.6rem;}
-  header p{margin:0;font-size:.9rem;opacity:.9;}
-  .home-btn{
-    position:absolute;left:15px;top:15px;background:#fff;color:#4CAF50;
-    border:none;padding:7px 12px;border-radius:8px;font-weight:bold;cursor:pointer;
-    box-shadow:0 2px 5px rgba(0,0,0,.2);transition:.2s;
-  }
-  .home-btn:hover{background:#c8facc;}
-  main{max-width:800px;margin:25px auto;padding:20px;background:#fff;border-radius:14px;
-       box-shadow:0 3px 8px rgba(0,0,0,0.1);}
-  label{display:block;margin-top:10px;font-weight:500;}
-  input,select,textarea{width:100%;padding:8px;margin-top:4px;border:1px solid #ccc;
-               border-radius:6px;box-sizing:border-box;font-size:.9rem;}
-  select[multiple]{height:200px;}
-  button{background:#4CAF50;color:#fff;border:none;padding:10px 18px;border-radius:8px;
-         cursor:pointer;font-weight:bold;margin:10px 5px 0 0;}
-  button:hover{background:#2e7d32;}
-  textarea{height:150px;font-family:monospace;font-size:.9rem;resize:vertical;}
-  footer{text-align:center;color:#666;padding:15px;margin-top:30px;font-size:.85rem;}
-  .manual-block{border:1px solid #ddd;padding:10px;border-radius:8px;margin-top:10px;background:#f9f9f9;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBR Game Calculator | DmiBot</title>
+    <link rel="icon" href="Mikrotik.svg">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
-  <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
-  <img src="https://dmibot.github.io/Mikrotik.svg" alt="Mikrotik Logo">
-  <h1>PBR Game Calculator</h1>
-  <p>by dmibot</p>
+    <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
+    <h1>🎮 PBR Game Calculator</h1>
+    <p>Optimized for RouterOS v6 & v7</p>
 </header>
-
 <main>
-  <h2 style="text-align:center;color:#388E3C;">⚙️ Multi Game Policy Based Routing Generator</h2>
-
-  <!-- RouterOS & ISP Section -->
-  <label>Versi RouterOS:</label>
-  <select id="rosVer">
-    <option value="6">RouterOS v6</option>
-    <option value="7" selected>RouterOS v7</option>
-  </select>
-
-  <label>Nama ISP (Prefix Route):</label>
-  <input id="ispName" placeholder="contoh: to_Telkom">
-
-  <label>ISP Interface (ISP yang dipilih untuk PBR):</label>
-  <input id="ispInterface" placeholder="contoh: ether4" value="ether4">
-
-  <label>IP Gateway ISP:</label>
-  <input id="ispGateway" placeholder="contoh: 172.16.0.1" value="172.16.0.1">
-
-  <!-- Game Preset -->
-  <label>Pilih Game Preset (bisa pilih lebih dari satu):</label>
-  <select id="gameSelect" multiple>
-    <option value="Mobile Legends">Mobile Legends</option>
-    <option value="Free Fire">Free Fire</option>
-    <option value="PUBG Mobile">PUBG Mobile</option>
-    <option value="Call of Duty">Call of Duty Mobile</option>
-    <option value="Arena of Valor">Arena of Valor (AOV)</option>
-    <option value="Stumble Guys">Stumble Guys</option>
-    <option value="Genshin Impact">Genshin Impact</option>
-    <option value="Clash of Clans">Clash of Clans / Royale</option>
-    <option value="League of Legends">League of Legends Mobile</option>
-    <option value="DOTA2">DOTA2</option>
-    <option value="FIFA Online">FIFA Online</option>
-    <option value="Point Blank Mobile">Point Blank Mobile</option>
-    <option value="LINE Get Rich">LINE Let’s Get Rich</option>
-    <option value="Dream League Soccer">Dream League Soccer</option>
-    <option value="Among Us">Among Us</option>
-    <option value="Roblox">Roblox</option>
-  </select>
-
-  <!-- Manual Game Input Section -->
-  <div id="manualContainer" style="margin-top:15px;">
-    <h3>🎮 Game Manual (Optional)</h3>
-    <div id="manualGameList"></div>
-    <button id="addManualBtn" type="button">+ Tambah Game Manual</button>
-  </div>
-
-  <!-- QoS Settings -->
-  <label>Priority (0=lowest, 1=highest):</label>
-  <select id="priority">
-    <option value="1" selected>1 (Highest)</option>
-    <option value="2">2</option><option value="3">3</option>
-    <option value="4">4</option><option value="5">5</option>
-    <option value="6">6</option><option value="7">7</option>
-    <option value="8">8 (Lowest)</option>
-  </select>
-
-  <label>Bandwidth Upload (default 5M):</label>
-  <input id="bwUp" placeholder="contoh: 5M">
-
-  <label>Bandwidth Download (default 5M):</label>
-  <input id="bwDown" placeholder="contoh: 5M">
-
-  <div style="text-align:center;margin-top:15px;">
-    <button id="generateBtn">Generate Script</button>
-    <button id="copyBasic">Copy Basic</button>
-    <button id="copyRouting">Copy Routing</button>
-  </div>
-
-  <h3>📜 Konfigurasi Dasar</h3>
-  <textarea id="outputBasic" readonly></textarea>
-
-  <h3>🧭 Konfigurasi Routing</h3>
-  <textarea id="outputRouting" readonly></textarea>
+    <div class="card">
+        <h3>1️⃣ Konfigurasi Umum</h3>
+        <label for="rosVer">Versi RouterOS:</label>
+        <select id="rosVer"><option value="7" selected>RouterOS v7 (Stable)</option><option value="6">RouterOS v6 (Legacy)</option></select>
+        <label for="ispName">Nama Routing Mark / ISP:</label>
+        <input id="ispName" type="text" placeholder="ISP-GAME" value="ISP-GAME">
+        <label for="gw">IP Gateway Game:</label>
+        <input id="gw" type="text" placeholder="192.168.2.1" pattern="^([0-9]{1,3}\.){3}[0-9]{1,3}$" required title="Format IP Salah">
+        <div style="display: flex; gap: 10px;">
+            <div style="flex:1"><label for="bwUp">Limit Upload (Mbps):</label><input id="bwUp" type="number" value="10"></div>
+            <div style="flex:1"><label for="bwDown">Limit Download (Mbps):</label><input id="bwDown" type="number" value="20"></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>2️⃣ Pilih Game</h3>
+        <div id="gameCheckboxes">
+             <div class="game-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
+                </div>
+        </div>
+        <h4>➕ Game Manual</h4>
+        <div id="manualGameList"></div>
+        <button id="addManualBtn" type="button" style="background:#2196F3;">+ Tambah Game Manual</button>
+    </div>
+    <button id="generateBtn" style="width:100%; font-size:1.2rem;">🚀 Generate Script</button>
+    <div class="card">
+        <h3>📜 Output Script</h3>
+        <label>Mangle Rules (Copy to Terminal):</label>
+        <textarea id="outputBasic" readonly onclick="this.select()"></textarea>
+        <label>Routing & QoS Rules:</label>
+        <textarea id="outputRouting" readonly onclick="this.select()"></textarea>
+    </div>
 </main>
-
-<footer>© 2025 dmibot | PBR Game Calculator</footer>
-
-<script>
-// === Pop-up Dua Bahasa ===
-window.addEventListener('load',()=>{
-  alert(
-"🇮🇩 Bahasa Indonesia\n"+
-"Versi terbaru PBR Game Calculator by @dmibot.\n"+
-"Sekarang kamu bisa memilih beberapa game preset sekaligus, dan juga menambahkan beberapa game manual dalam satu konfigurasi.\n\n"+
-"========================\n\n"+
-"🇬🇧 English Version\n"+
-"Now you can select multiple preset games and add multiple custom games in one configuration.\n"+
-"Fully adaptive and automatic routing, mangle, and QoS generation."
-  );
-});
-
-// === Manual Game Control ===
-document.getElementById('addManualBtn').addEventListener('click',()=>{
-  const container = document.getElementById('manualGameList');
-  const div = document.createElement('div');
-  div.className = 'manual-block';
-  div.innerHTML = `
-    <label>Nama Game Manual:</label>
-    <input class="manualName" placeholder="contoh: Apex Legends">
-    <label>Port Game Manual:</label>
-    <textarea class="manualPort" placeholder="Format:\ntcp: 80,443\nudp: 7000-7999"></textarea>
-  `;
-  container.appendChild(div);
-});
-</script>
-
-<!-- JS Logic -->
+<footer><p style="text-align:center; padding:20px; color:#777;">&copy; 2025 DmiBot Projects</p></footer>
 <script src="modules/pbr_game_calculator.js"></script>
+<script>
+    const container = document.querySelector('.game-grid');
+    if(container && typeof gamePorts !== 'undefined'){
+        Object.keys(gamePorts).forEach(key => {
+            const div = document.createElement('div');
+            div.innerHTML = `<label style="font-weight:normal; cursor:pointer;"><input type="checkbox" value="${key}" class="game-chk"> ${key}</label>`;
+            container.appendChild(div);
+        });
+    }
+</script>
 </body>
 </html>

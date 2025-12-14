@@ -1,139 +1,135 @@
-// === Mikrotik LB Basic Setup Module ===
-// Create the Basic Setup UI dynamically inside section1
+// === Mikrotik LB Basic Setup Module (Auto-IP Feature) ===
+
 document.getElementById("section1").innerHTML = `
 <h2>🧱 Basic Network Setup</h2>
+<div class="card" style="background:#fff3e0; border:1px solid #ffe0b2;">
+    <p style="margin:0; font-size:0.9rem;">📝 <strong>Smart Feature:</strong> Masukkan Gateway, sistem akan otomatis membuatkan IP Address untuk Interface WAN Anda.</p>
+</div>
 
 <div id="ispContainer"></div>
-<button id="addIspBtn">+ Tambah Interface ISP</button>
-
+<button id="addIspBtn" type="button" style="background:#2196F3;">+ Tambah Data ISP</button>
 <hr>
+
 <h3>🌐 Bridge LAN Configuration</h3>
-<label>IP LAN:</label>
-<input id="ipLan" value="10.10.10.1/24" placeholder="contoh: 10.10.10.1/24">
-<br>
+<label for="ipLan">IP LAN (Format CIDR):</label>
+<input id="ipLan" type="text" value="192.168.1.1/24" placeholder="192.168.1.1/24">
+
 <div id="lanPorts"></div>
-<button id="addLanPort">+ Tambah Port LAN</button>
-
+<button id="addLanPort" type="button">+ Tambah Port LAN</button>
 <hr>
-<h3>🧩 DNS & DoH Settings</h3>
-<label>Pilih DoH Provider:</label>
+
+<h3>🛡️ DNS & DoH Settings</h3>
+<label>Pilih Provider DoH:</label>
 <select id="dohSelect">
-  <option value="https://dns.google/dns-query">Google (8.8.8.8,8.8.4.4)</option>
-  <option value="https://dns.cloudflare.com/dns-query" selected>Cloudflare (1.1.1.1,1.0.0.1)</option>
-  <option value="https://dns.quad9.net/dns-query">Quad9 (9.9.9.9,149.112.112.112)</option>
-  <option value="https://dns.adguard.com/dns-query">AdGuard (94.140.14.14,94.140.15.15)</option>
+  <option value="https://dns.google/dns-query" data-dns="8.8.8.8,8.8.4.4">Google</option>
+  <option value="https://dns.cloudflare.com/dns-query" data-dns="1.1.1.1,1.0.0.1" selected>Cloudflare</option>
+  <option value="https://dns.quad9.net/dns-query" data-dns="9.9.9.9,149.112.112.112">Quad9</option>
+  <option value="https://dns.adguard.com/dns-query" data-dns="94.140.14.14,94.140.15.15">AdGuard (Ads Block)</option>
 </select>
-<br>
-<label>Tambahan Manual DNS (opsional, pisahkan dengan koma):</label>
-<input id="manualDns" placeholder="contoh: 1.1.1.1,8.8.8.8">
+
+<label>DNS Server (Otomatis terisi):</label>
+<input id="manualDns" value="1.1.1.1,1.0.0.1" placeholder="8.8.8.8,1.1.1.1">
 
 <hr>
-<div style="text-align:center">
-  <button id="genBasicBtn">Generate Config</button>
-  <button id="copyBasicBtn">Copy Config</button>
-</div>
-<textarea id="output_basic" readonly></textarea>
+<button id="genBasicBtn" style="width:100%; margin-top:20px; background:#FF9800;">📄 Generate Basic Script Only</button>
+<textarea id="output_basic" readonly placeholder="Klik tombol di atas untuk melihat preview..." style="height:200px; margin-top:10px;"></textarea>
 `;
 
-// === Default ISP data ===
-let ispCount = 0;
+// --- UI LOGIC ---
 const ispContainer = document.getElementById("ispContainer");
+const lanPortsContainer = document.getElementById("lanPorts");
+const dohSelect = document.getElementById("dohSelect");
+const manualDns = document.getElementById("manualDns");
 
-function addISP(iface, gw, name) {
-  ispCount++;
-  const div = document.createElement("div");
-  div.className = "isp-block";
-  div.innerHTML = `
-    <h3>ISP-${ispCount}</h3>
-    <label>Nama Interface:</label>
-    <input class="iface" value="${iface || ""}" placeholder="contoh: ether1-Telkom">
-    <label>IP Gateway:</label>
-    <input class="gateway" value="${gw || ""}" placeholder="contoh: 172.16.0.1">
-    <label>Nama ISP:</label>
-    <input class="ispname" value="${name || ""}" placeholder="contoh: Telkom">
-    <hr>`;
-  ispContainer.appendChild(div);
-}
+dohSelect.addEventListener("change", () => {
+    const selectedOption = dohSelect.options[dohSelect.selectedIndex];
+    manualDns.value = selectedOption.getAttribute("data-dns");
+});
 
-// default Telkom & Fastlink
-addISP("ether4-Telkom", "172.16.0.1", "Telkom");
-addISP("ether5-Fastlink", "172.8.45.1", "Fastlink");
-
-document.getElementById("addIspBtn").onclick = () => addISP("", "", "");
-
-// === LAN Port handling ===
-let lanCount = 0;
-const lanPorts = document.getElementById("lanPorts");
-function addLANport(name) {
-  lanCount++;
-  const div = document.createElement("div");
-  div.innerHTML = `
-    <label>Port LAN-${lanCount}:</label>
-    <input class="lanPort" value="${name || ""}" placeholder="contoh: ether2">`;
-  lanPorts.appendChild(div);
-}
-addLANport("ether3"); // default
-document.getElementById("addLanPort").onclick = () => addLANport("");
-
-// === Generate Basic Config ===
-document.getElementById("genBasicBtn").onclick = () => {
-  const ipLan = document.getElementById("ipLan").value.trim() || "10.10.10.1/24";
-  const doh = document.getElementById("dohSelect").value;
-  const manualDns = document.getElementById("manualDns").value.trim();
-
-  // Collect ISP data
-  const ifaceEls = document.querySelectorAll(".iface");
-  const gwEls = document.querySelectorAll(".gateway");
-  const ispNameEls = document.querySelectorAll(".ispname");
-  let ispList = [];
-  for (let i = 0; i < ifaceEls.length; i++) {
-    ispList.push({
-      iface: ifaceEls[i].value || `ether${i+1}`,
-      gw: gwEls[i].value || `192.168.${i+1}.1`,
-      name: ispNameEls[i].value || `ISP${i+1}`
-    });
-  }
-
-  // Collect LAN ports
-  const ports = Array.from(document.querySelectorAll(".lanPort")).map(p => p.value).filter(Boolean);
-
-  // Build DNS list
-  let dnsServers = "";
-  if (doh.includes("google")) dnsServers = "8.8.8.8,8.8.4.4";
-  else if (doh.includes("cloudflare")) dnsServers = "1.1.1.1,1.0.0.1";
-  else if (doh.includes("quad9")) dnsServers = "9.9.9.9,149.112.112.112";
-  else if (doh.includes("adguard")) dnsServers = "94.140.14.14,94.140.15.15";
-  if (manualDns) dnsServers += (dnsServers ? "," : "") + manualDns;
-
-  // Bridge & DHCP
-  const network = ipLan.split("/")[0].split(".").slice(0,3).join(".") + ".0";
-
-  let output = `# === Basic Network Setup ===
-/interface bridge add name=bridge-LAN protocol-mode=rstp arp=enabled
-/interface bridge port
-${ports.map(p=>`add bridge=bridge-LAN interface=${p}`).join("\n")}
-
-/ip address add address=${ipLan} interface=bridge-LAN network=${network}
-/ip pool add name=LAN-Pool ranges=${network.replace(".0",".2")}-${network.replace(".0",".254")}
-/ip dhcp-server add name=LAN-DHCP interface=bridge-LAN address-pool=LAN-Pool lease-time=4h disabled=no
-/ip dhcp-server network add address=${network}/24 gateway=${ipLan.split("/")[0]} dns-server=${dnsServers}
-
-/ip dns set allow-remote-requests=yes servers=${dnsServers} use-doh-server=${doh} verify-doh-cert=no
-`;
-
-  // DHCP Client per ISP
-  ispList.forEach(isp => {
-    output += `\n/ip dhcp-client add interface=${isp.iface} use-peer-dns=no disabled=no comment="${isp.name}"`;
-  });
-
-  document.getElementById("output_basic").value = output.trim();
-  window.basicOutput = output.trim(); // share to main page for combine
+document.getElementById("addIspBtn").onclick = () => {
+    const div = document.createElement("div");
+    div.className = "isp-block";
+    div.style.cssText = "border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:8px; background:#f9f9f9;";
+    div.innerHTML = `
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+            <div><label style="font-size:0.8rem">Nama ISP:</label><input class="ispName" value="ISP1"></div>
+            <div><label style="font-size:0.8rem">Interface:</label><input class="ispIface" placeholder="ether1"></div>
+            <div><label style="font-size:0.8rem">Gateway:</label><input class="ispGw" placeholder="192.168.1.1"></div>
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" style="background:#f44336; margin-top:5px; padding:5px 10px; font-size:0.8rem;">Hapus</button>
+    `;
+    ispContainer.appendChild(div);
 };
 
-// === Copy Config ===
-document.getElementById("copyBasicBtn").onclick = () => {
-  const t = document.getElementById("output_basic");
-  t.select();t.setSelectionRange(0,99999);
-  navigator.clipboard.writeText(t.value);
-  alert("Basic Config Copied!");
+document.getElementById("addLanPort").onclick = () => {
+    const div = document.createElement("div");
+    div.innerHTML = `<input class="lanPort" placeholder="etherX" style="width:80%"><button onclick="this.parentElement.remove()" style="width:15%; background:#f44336; margin-left:5px;">X</button>`;
+    lanPortsContainer.appendChild(div);
+};
+
+// --- CORE LOGIC (Smart IP Calculation) ---
+window.generateBasicSetup = () => {
+  window.ispList = [];
+  document.querySelectorAll(".isp-block").forEach(block => {
+      const name = block.querySelector(".ispName").value;
+      const iface = block.querySelector(".ispIface").value;
+      const gw = block.querySelector(".ispGw").value;
+      if(name && iface && gw) window.ispList.push({ name, iface, gw });
+  });
+
+  const ipLan = document.getElementById("ipLan").value;
+  const dnsServers = manualDns.value;
+  const dohUrl = dohSelect.value;
+  
+  if(window.ispList.length === 0) return { error: true, msg: "⚠️ Minimal 1 ISP harus diisi lengkap." };
+  
+  const ipOnly = ipLan.split("/")[0]; 
+  const network = ipOnly.split(".").slice(0,3).join(".") + ".0";
+  let ports = [];
+  document.querySelectorAll(".lanPort").forEach(i => { if(i.value) ports.push(i.value); });
+
+  let script = `# === 1. BASIC NETWORK SETUP ===\n`;
+  script += `/interface bridge add name="bridge-LAN" protocol-mode=rstp comment="LAN Bridge"\n`;
+  if(ports.length > 0) {
+      script += `/interface bridge port\n` + ports.map(p => `add bridge="bridge-LAN" interface="${p}"`).join("\n") + "\n";
+  }
+  script += `/ip address add address="${ipLan}" interface="bridge-LAN" network="${network}"\n`;
+  script += `/ip pool add name="LAN-Pool" ranges="${network.replace(".0", ".2")}-${network.replace(".0", ".254")}"\n`;
+  script += `/ip dhcp-server add name="LAN-DHCP" interface="bridge-LAN" address-pool="LAN-Pool" lease-time=4h disabled=no\n`;
+  script += `/ip dhcp-server network add address="${network}/24" gateway="${ipOnly}" dns-server="${dnsServers}"\n`;
+  script += `\n# DNS & DoH Security\n`;
+  script += `/ip dns set allow-remote-requests=yes servers="${dnsServers}" use-doh-server="${dohUrl}" verify-doh-cert=no\n`;
+  script += `/ip firewall filter add chain=input protocol=udp dst-port=53 in-interface-list=!LAN action=drop comment="Drop DNS Request from WAN"\n`;
+
+  script += `\n# WAN CONFIGURATION (Auto-Detected)\n`;
+  
+  window.ispList.forEach(isp => {
+      // LOGIKA PINTAR: Hitung IP Mikrotik berdasarkan Gateway
+      // Misal GW: 192.168.1.1 -> IP: 192.168.1.2
+      const parts = isp.gw.split(".");
+      if(parts.length === 4) {
+          let lastOctet = parseInt(parts[3]);
+          // Jika GW .1, maka IP .2. Jika GW .254, maka IP .253. Selain itu tambah 1.
+          let newOctet = (lastOctet === 1) ? 2 : (lastOctet === 254 ? 253 : lastOctet + 1);
+          let calculatedIp = `${parts[0]}.${parts[1]}.${parts[2]}.${newOctet}`;
+          
+          script += `/ip address add address="${calculatedIp}/24" interface="${isp.iface}" comment="${isp.name} Static IP (Auto-Calc)"\n`;
+      }
+      
+      // Tetap tambahkan DHCP Client sebagai backup/deteksi
+      // add-default-route=no AGAR TIDAK BENTROK dengan Routing PCC Manual
+      script += `/ip dhcp-client add interface="${isp.iface}" disabled=no add-default-route=no use-peer-dns=no comment="${isp.name} DHCP Client (Backup)"\n`;
+  });
+
+  return { error: false, script: script };
+};
+
+document.getElementById("genBasicBtn").onclick = () => {
+    const result = window.generateBasicSetup();
+    if(result.error) {
+        alert(result.msg);
+        document.getElementById("output_basic").value = result.msg;
+    } else {
+        document.getElementById("output_basic").value = result.script;
+    }
 };

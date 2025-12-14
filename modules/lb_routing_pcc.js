@@ -1,133 +1,83 @@
-// === Mikrotik LB Routing & PCC Module ===
-// Create UI
+// === Mikrotik LB Routing & PCC Module (Final Sync) ===
+
 document.getElementById("section2").innerHTML = `
 <h2>🧭 Routing & PCC Configuration</h2>
-
-<label>Versi RouterOS:</label>
-<select id="rosVer">
-  <option value="6">RouterOS v6</option>
-  <option value="7" selected>RouterOS v7</option>
-</select><br>
-
-<label>Mode Failover:</label>
-<select id="failMode">
-  <option value="RECURSIVE" selected>Recursive</option>
-  <option value="LOCAL">Local</option>
-</select><br>
-
-<label>IP Sama atau Beda?</label>
-<select id="ipMode">
-  <option value="BEDA" selected>Beda</option>
-  <option value="SAMA">Sama</option>
-</select><br>
-
-<hr>
-<div style="text-align:center">
-  <button id="genRoutingBtn">Generate Config</button>
-  <button id="copyRoutingBtn">Copy Config</button>
+<div class="card" style="background:#e3f2fd; border:1px solid #90caf9;">
+    <p style="margin:0; font-size:0.9rem;">ℹ️ Modul ini otomatis mengambil data ISP & Gateway dari Tab 1.</p>
 </div>
-
-<textarea id="output_routing" readonly></textarea>
+<label>Versi RouterOS:</label>
+<select id="rosVer"><option value="7" selected>RouterOS v7 (Recommended)</option><option value="6">RouterOS v6</option></select>
+<label>Mode Failover:</label>
+<select id="failMode"><option value="RECURSIVE" selected>Recursive (Cek Ping)</option><option value="LOCAL">Local (Cek Interface)</option></select>
+<hr>
+<button id="genRoutingBtn" style="width:100%;">🔄 Generate Routing Script</button>
+<textarea id="output_routing" readonly placeholder="Klik tombol Generate..."></textarea>
 `;
 
-// === Helper: timestamp ===
-function getTimestamp() {
-  const now = new Date();
-  const pad = n => (n < 10 ? "0" + n : n);
-  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-}
-
-// === Generate Script ===
-document.getElementById("genRoutingBtn").onclick = () => {
-  const rosVer = document.getElementById("rosVer").value;
-  const failMode = document.getElementById("failMode").value;
-  const ipMode = document.getElementById("ipMode").value;
-  const timestamp = getTimestamp();
-
-  // Ambil data ISP dari modul pertama
-  const ifaceEls = document.querySelectorAll(".iface");
-  const gwEls = document.querySelectorAll(".gateway");
-  const ispNameEls = document.querySelectorAll(".ispname");
-
-  const ispList = [];
-  for (let i = 0; i < ifaceEls.length; i++) {
-    ispList.push({
-      iface: ifaceEls[i].value || `ether${i+1}`,
-      gw: gwEls[i].value || `192.168.${i+1}.1`,
-      name: ispNameEls[i].value || `ISP${i+1}`
-    });
-  }
-
-  const totalISP = ispList.length;
-  let script = `# =========================================================
-# PCC Loadbalance Tools by @DmiBot
-# Generated on: ${timestamp}
-# =========================================================
-
-# === ROUTING & PCC CONFIGURATION ===
-`;
-
-  // Bypass Local Networks
-  script += `
-# Bypass All Local Networks
-/ip firewall mangle
-add chain=prerouting dst-address=10.0.0.0/8 action=accept
-add chain=prerouting dst-address=172.16.0.0/12 action=accept
-add chain=prerouting dst-address=192.168.0.0/16 action=accept
-`;
-
-  if (rosVer === "7") {
-    // RouterOS v7 - create routing tables dynamically
-    script += `\n# Create Routing Tables (RouterOS v7)\n/routing/table\n`;
-    ispList.forEach(isp => {
-      script += `add name=to_${isp.name} fib\n`;
-    });
-  }
-
-  // PCC Rules
-  script += `\n# PCC Load Balancing Rules\n/ip firewall mangle\n`;
-  ispList.forEach((isp, index) => {
-    script += `add chain=prerouting in-interface-list=LAN per-connection-classifier=both-addresses-and-ports:${totalISP}/${index} action=mark-connection new-connection-mark=${isp.name}_conn passthrough=yes comment="${isp.name}"\n`;
-  });
-
-  ispList.forEach(isp => {
-    script += `add chain=prerouting connection-mark=${isp.name}_conn action=mark-routing new-routing-mark=to_${isp.name} passthrough=no comment="${isp.name}"\n`;
-  });
-
-  // Routes
-  script += `\n# Static Routes\n/ip route\n`;
-  ispList.forEach(isp => {
-    if (rosVer === "6") {
-      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} routing-mark=to_${isp.name} comment="${isp.name} by@DmiBot"\n`;
-    } else {
-      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} routing-table=to_${isp.name} comment="${isp.name} by@DmiBot"\n`;
+// --- CORE LOGIC (Exported Function) ---
+// Fungsi ini menerima ispList sebagai argumen agar selalu sinkron
+window.generateRoutingScript = (currentIspList) => {
+    if(!currentIspList || currentIspList.length === 0) {
+        return { error: true, msg: "Data ISP Kosong. Silakan isi di Tab 1." };
     }
-  });
 
-  // Failover Logic
-  script += `\n# Failover Config (${failMode})\n/ip route\n`;
-  if (failMode === "RECURSIVE") {
-    ispList.forEach((isp, index) => {
-      const distance = index + 1;
-      const dnsTarget = index === 0 ? "8.8.8.8" : "1.1.1.1";
-      script += `add dst-address=${dnsTarget} gateway=${isp.gw} check-gateway=ping comment="${isp.name} by@DmiBot"\n`;
-      script += `add dst-address=0.0.0.0/0 gateway=${dnsTarget} distance=${distance} comment="${isp.name} Recursive by@DmiBot"\n`;
-    });
-  } else {
-    ispList.forEach((isp, index) => {
-      const distance = index + 1;
-      script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} distance=${distance} comment="${isp.name} Local by@DmiBot"\n`;
-    });
-  }
+    const rosVer = document.getElementById("rosVer").value;
+    const failMode = document.getElementById("failMode").value; // Ambil nilai DOM saat fungsi dipanggil
 
-  document.getElementById("output_routing").value = script.trim();
-  window.routingOutput = script.trim(); // share ke portal utama
+    let script = `# === 2. ROUTING & PCC CONFIG ===\n`;
+    
+    // Address List Lokal
+    script += `/ip firewall address-list\nadd list=LOCAL_NET address=192.168.0.0/16\nadd list=LOCAL_NET address=10.0.0.0/8\nadd list=LOCAL_NET address=172.16.0.0/12\n\n`;
+    
+    // Mangle PCC
+    script += `/ip firewall mangle\n`;
+    currentIspList.forEach((isp, index) => {
+        script += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${currentIspList.length}/${index} action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="PCC ${isp.name}"\n`;
+        script += `add chain=prerouting in-interface="bridge-LAN" connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
+    });
+
+    // Routing Table (v7)
+    script += `\n# Routing Tables & Routes\n`;
+    if (rosVer === "7") {
+        currentIspList.forEach(isp => script += `/routing table add name="to_${isp.name}" fib\n`);
+    }
+
+    // Main Routes (Marked)
+    script += `/ip route\n`;
+    currentIspList.forEach(isp => {
+        const routeParam = (rosVer === "7") ? `routing-table="to_${isp.name}"` : `routing-mark="to_${isp.name}"`;
+        script += `add dst-address=0.0.0.0/0 gateway="${isp.gw}" ${routeParam} comment="${isp.name} Route"\n`;
+    });
+
+    // Failover Routes (Main Table)
+    script += `\n# Failover (Main Table)\n`;
+    currentIspList.forEach((isp, index) => {
+        const dist = index + 1;
+        // Logic Recursive sederhana
+        if(failMode === "RECURSIVE") {
+            const checkIp = (index === 0) ? "8.8.8.8" : "1.1.1.1";
+            script += `add dst-address=${checkIp} gateway=${isp.gw} scope=10\n`;
+            script += `add dst-address=0.0.0.0/0 gateway=${checkIp} distance=${dist} target-scope=11 check-gateway=ping comment="Failover ${isp.name}"\n`;
+        } else {
+            script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} distance=${dist} comment="Failover ${isp.name}"\n`;
+        }
+    });
+
+    return { error: false, script: script };
 };
 
-// === Copy Config ===
-document.getElementById("copyRoutingBtn").onclick = () => {
-  const t = document.getElementById("output_routing");
-  t.select(); t.setSelectionRange(0,99999);
-  navigator.clipboard.writeText(t.value);
-  alert("Routing Config Copied!");
+// UI Listener untuk tombol di Tab 2
+document.getElementById("genRoutingBtn").onclick = () => {
+    // 1. Refresh data dari Tab 1
+    if(typeof window.generateBasicSetup === 'function') window.generateBasicSetup();
+    
+    // 2. Generate Routing pakai data terbaru
+    const result = window.generateRoutingScript(window.ispList);
+    
+    if(result.error) {
+        document.getElementById("output_routing").value = result.msg;
+        alert(result.msg);
+    } else {
+        document.getElementById("output_routing").value = result.script;
+    }
 };

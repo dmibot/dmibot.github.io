@@ -1,128 +1,60 @@
-// === PBR Sosmed Tool by @DmiBot ===
-
-// Timestamp generator
-function getTimestamp() {
-  const now = new Date();
-  const pad = n => (n < 10 ? "0" + n : n);
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-}
-
-// === Daftar domain sosial media (update 2025) ===
+// === PBR Sosmed Tool Logic (Optimized) ===
 const sosmedDomains = {
   "Facebook": [".facebook.com", ".fbcdn.net", ".fbsbx.com", ".messenger.com"],
   "Instagram": [".instagram.com", ".cdninstagram.com"],
-  "TikTok": [".tiktok.com", ".byteoversea.com", ".tiktokcdn.com"],
-  "YouTube": [".youtube.com", ".googlevideo.com", ".ytimg.com"],
+  "TikTok": [".tiktok.com", ".byteoversea.com", ".tiktokcdn.com", ".tiktokv.com"],
+  "YouTube": [".youtube.com", ".googlevideo.com", ".ytimg.com", ".youtu.be"],
   "Twitter": [".twitter.com", ".twimg.com", ".x.com"],
   "WhatsApp": [".whatsapp.com", ".whatsapp.net"],
   "Telegram": [".telegram.org", ".t.me"],
-  "Discord": [".discord.com", ".discord.gg", ".discordapp.net"],
-  "Spotify": [".spotify.com"],
-  "Netflix": [".nflxvideo.net", ".netflix.com"],
-  "Threads": [".threads.net"],
   "Shopee": [".shopee.co.id", ".shp.ee"],
   "Tokopedia": [".tokopedia.com"]
 };
 
-// === Event tombol Generate ===
 document.getElementById("generateBtn").addEventListener("click", () => {
-  const rosVer = document.getElementById("rosVer").value;
-  const ispName = document.getElementById("ispName").value.trim() || "to_Telkom";
-  const iface = document.getElementById("ispInterface").value.trim() || "ether5";
-  const gw = document.getElementById("ispGateway").value.trim() || "172.8.45.1";
+  const ispName = document.getElementById("ispName").value;
+  const gw = document.getElementById("gw").value;
   const cleanupMode = document.querySelector('input[name="cleanupMode"]:checked').value;
-  const timeoutValue = document.getElementById("timeoutValue").value.trim() || "4h";
-  const schedTime = document.getElementById("schedHour").value || "03:00";
-  const timestamp = getTimestamp();
+  const timeoutVal = document.getElementById("timeoutVal").value;
+  const schedTime = document.getElementById("schedTime").value;
+  const useManual = document.getElementById("manualDomainChk").checked;
+  const manualList = document.getElementById("manualDomains").value;
+  let basic = `# === PBR Sosmed RAW & Mangle ===\n/ip firewall raw\nadd chain=prerouting action=accept dst-address-list=LOCAL_NET comment="Bypass Local Traffic"\n`;
 
-  // === Ambil sosmed terpilih ===
-  const checkedBoxes = document.querySelectorAll(".sosmed-list input[type=checkbox]:checked");
-  const selected = Array.from(checkedBoxes).map(el => el.value);
-  const manualDomains = document.getElementById("manualDomains").value.trim();
-
-  if (selected.length === 0 && !manualDomains) {
-    alert("⚠️ Pilih minimal satu platform sosial media atau tambahkan domain manual!");
-    return;
-  }
-
-  let basic = `# =========================================================
-# PBR Sosmed Tool by @DmiBot
-# Generated on: ${timestamp}
-# =========================================================
-/ip firewall raw`;
-  let routing = "";
-
-  // === RouterOS 7 routing table ===
-  if (rosVer === "7") {
-    routing += `/routing/table add name=${ispName} fib comment="PBR Sosmed Table by@DmiBot"\n`;
-  }
-
-  // === Tambahkan rule untuk tiap sosmed ===
-  selected.forEach(app => {
-    const domains = sosmedDomains[app] || [];
-    const listName = app.toUpperCase().replace(/\s+/g, "_");
-
+  for (const [app, domains] of Object.entries(sosmedDomains)) {
     domains.forEach(domain => {
-      let rule = `add action=add-dst-to-address-list chain=prerouting content=${domain} address-list=${listName} dst-address-list=!lokal comment="${app} by@DmiBot"`;
-      if (cleanupMode === "timeout") {
-        const valid = /^(?:\d+[mhd])$/i.test(timeoutValue) ? timeoutValue : "4h";
-        rule += ` address-list-timeout=${valid}`;
-      } else {
-        rule += ` address-list-timeout=none`;
-      }
-      basic += `\n${rule}`;
+      let rule = `add chain=prerouting content="${domain}" action=add-dst-to-address-list address-list="${app}"`;
+      if (cleanupMode === "timeout") rule += ` address-list-timeout=${timeoutVal}`;
+      basic += `${rule} comment="${app}"\n`;
     });
+  }
 
-    // === Mangle mark-routing ===
-    routing += `
-/ip firewall mangle
-add chain=prerouting dst-address-list=${listName} action=mark-routing new-routing-mark=${ispName} passthrough=no comment="${app} by@DmiBot"
-`;
+  if (useManual && manualList) {
+    const mDomains = manualList.split(",").map(s => s.trim()).filter(s => s !== "");
+    mDomains.forEach(domain => {
+        let rule = `add chain=prerouting content="${domain}" action=add-dst-to-address-list address-list="MANUAL_SOSMED"`;
+        if (cleanupMode === "timeout") rule += ` address-list-timeout=${timeoutVal}`;
+        basic += `${rule} comment="Manual Domain"\n`;
+    });
+  }
+
+  basic += `\n/ip firewall mangle\n`;
+  const apps = Object.keys(sosmedDomains);
+  if(useManual) apps.push("MANUAL_SOSMED");
+  apps.forEach(app => {
+      basic += `add chain=prerouting dst-address-list="${app}" action=mark-routing new-routing-mark="${ispName}" passthrough=no comment="Route ${app} to ${ispName}"\n`;
   });
 
-  // === Manual Domain Section ===
-  if (manualDomains) {
-    const listName = "MANUAL_SOSMED";
-    const domains = manualDomains.split(",").map(d => d.trim()).filter(Boolean);
-    domains.forEach(domain => {
-      let rule = `add action=add-dst-to-address-list chain=prerouting content=${domain} address-list=${listName} dst-address-list=!lokal comment="Manual by@DmiBot"`;
-      if (cleanupMode === "timeout") {
-        const valid = /^(?:\d+[mhd])$/i.test(timeoutValue) ? timeoutValue : "4h";
-        rule += ` address-list-timeout=${valid}`;
-      } else {
-        rule += ` address-list-timeout=none`;
-      }
-      basic += `\n${rule}`;
-    });
+  let routing = `# === Routing Configuration ===\n# Pastikan Table ada di v7\n/ip route\nadd dst-address=0.0.0.0/0 gateway=${gw} routing-mark=${ispName} comment="Sosmed Route to ${ispName}"\n`;
 
-    routing += `
-/ip firewall mangle
-add chain=prerouting dst-address-list=${listName} action=mark-routing new-routing-mark=${ispName} passthrough=no comment="Manual by@DmiBot"
-`;
-  }
-
-  // === Scheduler Section (if enabled) ===
   if (cleanupMode === "scheduler") {
-    const [hour, minute] = schedTime.split(":");
-    routing += `
-/system scheduler
-add name=cleanup_sosmed start-time=${hour}:${minute} interval=1d on-event="/ip firewall address-list remove [find list~\\"FACEBOOK\\"]; /ip firewall address-list remove [find list~\\"INSTAGRAM\\"]; /ip firewall address-list remove [find list~\\"TIKTOK\\"]; /ip firewall address-list remove [find list~\\"YOUTUBE\\"]; /ip firewall address-list remove [find list~\\"TWITTER\\"]; /ip firewall address-list remove [find list~\\"MANUAL_SOSMED\\"]" comment="Auto cleanup by@DmiBot"
-`;
+    const [h, m] = schedTime.split(":");
+    const mikrotikListArray = apps.map(a => `"${a}"`).join(";");
+    routing += `\n/system scheduler\nadd name="cleanup_sosmed_daily" start-time=${h}:${m}:00 interval=1d on-event={\n    :local lists {${mikrotikListArray}};\n    :foreach k in=$lists do={\n        /ip firewall address-list remove [find list=$k]\n    }\n    :log info "Sosmed Address Lists Cleaned (Auto)"\n} comment="Auto Cleanup by DmiBot"\n`;
   }
-
-  // === Output ===
   document.getElementById("outputBasic").value = basic.trim();
   document.getElementById("outputRouting").value = routing.trim();
 });
 
-// === Copy Buttons ===
-document.getElementById("copyBasic").addEventListener("click",()=>{
-  const t=document.getElementById("outputBasic");
-  t.select();document.execCommand("copy");
-  alert("✅ Basic Config Copied!");
-});
-document.getElementById("copyRouting").addEventListener("click",()=>{
-  const t=document.getElementById("outputRouting");
-  t.select();document.execCommand("copy");
-  alert("✅ Routing Config Copied!");
-});
+document.getElementById("copyBasic").onclick = () => { const t = document.getElementById("outputBasic"); t.select(); navigator.clipboard.writeText(t.value); };
+document.getElementById("copyRouting").onclick = () => { const t = document.getElementById("outputRouting"); t.select(); navigator.clipboard.writeText(t.value); };

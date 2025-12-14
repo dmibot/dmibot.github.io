@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WireGuard VPN Tool | DmiBot</title>
+<link rel="icon" href="Mikrotik.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
+  <h1>🔐 WireGuard VPN Generator</h1>
+  <p>Setup VPN Paling Cepat & Ringan untuk RouterOS v7</p>
+</header>
+
+<main>
+  <div class="card">
+    <h3>📡 Konfigurasi Server (Mikrotik)</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+        <div>
+            <label>Nama Interface:</label>
+            <input id="wgName" value="wireguard1" placeholder="wireguard1">
+        </div>
+        <div>
+            <label>Listen Port (UDP):</label>
+            <input id="wgPort" value="13231" placeholder="13231">
+        </div>
+    </div>
+    
+    <label>IP Address VPN (Gateway):</label>
+    <input id="wgIp" value="10.10.100.1/24" placeholder="10.10.100.1/24">
+    
+    <label>IP Public / DDNS Router (Penting untuk Client):</label>
+    <input id="publicIp" placeholder="202.134.x.x atau id-router.sn.mynetname.net">
+  </div>
+
+  <div class="card">
+    <h3>📱 Konfigurasi Client (HP/Laptop)</h3>
+    <label>Nama Client (Peer):</label>
+    <input id="peerName" value="HP-Admin" placeholder="HP-Admin">
+    
+    <label>IP Address Client:</label>
+    <input id="peerIp" value="10.10.100.2/32" placeholder="10.10.100.2/32">
+    
+    <div style="background:#fff3e0; border:1px solid #ffe0b2; padding:10px; margin-top:10px; border-radius:5px;">
+        <p style="margin:0; font-size:0.85rem; color:#E65100;">
+            ⚠️ <strong>Info Key:</strong> Karena keterbatasan browser, Key harus digenerate di perangkat masing-masing. Script ini menyediakan <strong>Placeholder</strong>.
+        </p>
+    </div>
+  </div>
+
+  <button id="generateBtn" style="width:100%; font-size:1.2rem; background:#673AB7;">🔐 Generate Config</button>
+
+  <div class="tabs" style="margin-top:20px;">
+    <button id="tab1" class="active" onclick="openOut('router')">📜 Script RouterOS</button>
+    <button id="tab2" onclick="openOut('client')">📱 Config Client (.conf)</button>
+  </div>
+
+  <div id="outRouter" class="out-content">
+    <div class="card">
+        <p>Copy script ini ke Terminal Mikrotik:</p>
+        <textarea id="outputRouter" readonly onclick="this.select()" style="height:300px;"></textarea>
+    </div>
+  </div>
+
+  <div id="outClient" class="out-content hidden">
+    <div class="card">
+        <p>Copy text ini, simpan sebagai file <code>wg-client.conf</code> lalu import ke HP:</p>
+        <textarea id="outputClient" readonly onclick="this.select()" style="height:300px;"></textarea>
+    </div>
+  </div>
+
+</main>
+
+<footer><p style="text-align:center; padding:20px; color:#777;">&copy; 2025 DmiBot Projects</p></footer>
+
+<script src="modules/wireguard_tool.js"></script>
+<script>
+    function openOut(mode) {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        document.getElementById(mode === 'router' ? 'tab1' : 'tab2').classList.add('active');
+        document.getElementById('outRouter').classList.toggle('hidden', mode !== 'router');
+        document.getElementById('outClient').classList.toggle('hidden', mode !== 'client');
+    }
+</script>
+</body>
+</html>

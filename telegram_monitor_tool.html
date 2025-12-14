@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telegram Monitor Tool | DmiBot</title>
+<link rel="icon" href="Mikrotik.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
+  <h1>📢 Netwatch Telegram</h1>
+  <p>Monitoring Status Internet Real-time</p>
+</header>
+
+<main>
+  <div class="card">
+    <h3>🤖 Konfigurasi Bot Telegram</h3>
+    <div style="background:#e3f2fd; border:1px solid #90caf9; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <p style="margin:0; font-size:0.85rem;">ℹ️ <strong>Info:</strong> Buat bot di @BotFather untuk dapat Token, dan chat ke @userinfobot untuk dapat ID Anda.</p>
+    </div>
+    
+    <label>Bot Token:</label>
+    <input id="botToken" type="text" placeholder="123456789:ABCdefGHIjklMNOpqrs...">
+    
+    <label>Chat ID (User/Group):</label>
+    <input id="chatId" type="text" placeholder="12345678">
+  </div>
+
+  <div class="card">
+    <h3>🎯 Target Monitoring</h3>
+    <p>Masukkan IP yang ingin dipantau (misal: Gateway ISP atau Google DNS).</p>
+    
+    <div id="targetContainer">
+        <div class="target-block" style="border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:8px; background:#f9f9f9;">
+            <label style="font-size:0.9rem">Nama Monitor (ISP):</label>
+            <input class="monName" value="ISP-INDIHOME" placeholder="ISP-Utama">
+            
+            <label style="font-size:0.9rem">IP Target (Ping):</label>
+            <input class="monIp" value="8.8.8.8" placeholder="8.8.8.8">
+            
+            <label style="font-size:0.9rem">Interval Cek:</label>
+            <input class="monInterval" value="00:01:00" placeholder="00:01:00">
+        </div>
+    </div>
+    
+    <button id="addTargetBtn" type="button" style="background:#2196F3;">+ Tambah Target Lain</button>
+  </div>
+
+  <button id="generateBtn" style="width:100%; font-size:1.2rem;">🚀 Generate Script</button>
+
+  <div class="card">
+    <h3>📜 Output Script</h3>
+    <textarea id="outputScript" readonly onclick="this.select()" placeholder="Klik Generate..." style="height:300px;"></textarea>
+    <button id="copyBtn">📋 Copy Script</button>
+  </div>
+</main>
+
+<footer><p style="text-align:center; padding:20px; color:#777;">&copy; 2025 DmiBot Projects</p></footer>
+
+<script src="modules/telegram_monitor.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firewall Hardening | DmiBot</title>
+<link rel="icon" href="Mikrotik.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
+  <h1>🛡️ Firewall Hardening</h1>
+  <p>Amankan Router dari Serangan Brute Force & Scanner</p>
+</header>
+
+<main>
+  <div class="tabs">
+    <button id="tab1" class="active" onclick="openMode('basic')">🧱 Basic Protection</button>
+    <button id="tab2" onclick="openMode('knocking')">🚪 Port Knocking (Advanced)</button>
+  </div>
+
+  <div id="basicMode" class="mode-content">
+    <div class="card">
+        <h3>🔒 Input Chain Protection</h3>
+        <p>Konfigurasi standar untuk mengamankan router dari akses luar yang tidak diinginkan.</p>
+        
+        <label>Whitelist IP (Admin/VPN/Kantor):</label>
+        <input id="whiteListIp" placeholder="192.168.1.0/24, 10.10.10.2">
+        
+        <label>Port Winbox (Default 8291):</label>
+        <input id="winboxPort" value="8291" placeholder="8291">
+        
+        <label style="display:flex; align-items:center; margin-top:10px;">
+            <input type="checkbox" id="blockDnsWan" checked style="width:auto; margin-right:10px;">
+            Block DNS Request dari WAN (Cegah DDoS Amplification)
+        </label>
+        
+        <label style="display:flex; align-items:center;">
+            <input type="checkbox" id="blockScan" checked style="width:auto; margin-right:10px;">
+            Block Port Scanners (PSD)
+        </label>
+    </div>
+  </div>
+
+  <div id="knockingMode" class="mode-content hidden">
+    <div class="card" style="border: 1px solid #2196F3;">
+        <h3 style="color:#1976D2;">🚪 Port Knocking Generator</h3>
+        <p>Sembunyikan port Winbox! Port hanya akan terbuka jika Anda melakukan "ketukan" ke urutan port berikut.</p>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+            <div>
+                <label>Knock 1 (TCP):</label>
+                <input id="k1" value="1234" placeholder="1234">
+            </div>
+            <div>
+                <label>Knock 2 (TCP):</label>
+                <input id="k2" value="5678" placeholder="5678">
+            </div>
+            <div>
+                <label>Knock 3 (TCP):</label>
+                <input id="k3" value="9000" placeholder="9000">
+            </div>
+        </div>
+        <p style="font-size:0.8rem; color:#666;">*Ingat urutan port ini. Akses IP router pada port tersebut berurutan untuk membuka akses.</p>
+        
+        <label>Durasi Akses Terbuka (Menit):</label>
+        <input id="openTime" value="60" placeholder="60">
+    </div>
+  </div>
+
+  <button id="generateBtn" style="width:100%; font-size:1.2rem; background:#FF5722;">🛡️ Generate Firewall Script</button>
+
+  <div class="card">
+    <h3>📜 Output Script</h3>
+    <textarea id="outputScript" readonly onclick="this.select()" style="height:350px;" placeholder="Klik Generate..."></textarea>
+    <button id="copyBtn">📋 Copy Script</button>
+  </div>
+</main>
+
+<footer><p style="text-align:center; padding:20px; color:#777;">&copy; 2025 DmiBot Projects</p></footer>
+
+<script src="modules/firewall_tool.js"></script>
+<script>
+    function openMode(mode) {
+        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+        document.getElementById(mode === 'basic' ? 'tab1' : 'tab2').classList.add('active');
+        
+        document.getElementById('basicMode').classList.toggle('hidden', mode !== 'basic');
+        document.getElementById('knockingMode').classList.toggle('hidden', mode !== 'knocking');
+        
+        // Set global mode for JS module
+        window.currentMode = mode;
+    }
+    window.currentMode = 'basic'; // default
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mikrotik Adlist DNS Generator | DmiBot</title>
+<style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; padding: 20px; color: #333; }
+    .card { background: white; padding: 25px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+    label { display: block; font-weight: 600; margin-top: 10px; margin-bottom: 5px; color: #444; }
+    input[type="text"], textarea, select, input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: monospace; }
+    .btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; margin-top: 15px; }
+    .btn-generate { background: #388E3C; }
+    .btn-copy { background: #607D8B; margin-left: 10px; }
+    .list-group { margin-bottom: 15px; padding: 15px; border: 1px dashed #ccc; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<main style="max-width: 800px; margin: 0 auto;">
+    <header style="text-align: center; margin-bottom: 30px;">
+        <h1>🛡️ Mikrotik DNS Adlist Generator</h1>
+        <p>Alat untuk membuat konfigurasi Adblocker terpusat menggunakan fitur <code>/ip dns adlist</code>.</p>
+    </header>
+
+    <div class="card">
+        <h2>🔗 Adlist URL Configuration</h2>
+        
+        <div id="adlistContainer">
+            </div>
+
+        <button id="addAdlistBtn" class="btn" style="background: #1977D2; width: auto;">+ Tambah Adlist URL</button>
+    </div>
+
+    <div class="card">
+        <h2>⚙️ Advanced Settings</h2>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div>
+                <label for="cacheSize">DNS Cache Size (KiB):</label>
+                <input type="number" id="cacheSize" value="8192" min="2048" placeholder="Misal: 8192 KiB">
+                <p style="font-size: 0.8rem; color: #777; margin-top: 5px;">*Disarankan 8192KiB atau lebih.</p>
+            </div>
+            <div>
+                <label for="sslVerify">Verifikasi SSL (Keamanan):</label>
+                <select id="sslVerify">
+                    <option value="yes">Ya (Disarankan)</option>
+                    <option value="no">Tidak</option>
+                </select>
+            </div>
+        </div>
+        
+        <label for="whitelist">Whitelist (Optional - Domain yang tidak ingin diblokir, pisahkan dengan koma):</label>
+        <textarea id="whitelist" rows="3" placeholder="Misal: bankmandiri.co.id, myapp.com"></textarea>
+        <p style="font-size: 0.8rem; color: #777;">*Whitelist akan dibuat sebagai <code>type=FWD</code> di DNS Static.</p>
+    </div>
+
+    <div class="card">
+        <h2>📦 Generate & Output</h2>
+        <button onclick="window.generateAdlistScript()" class="btn btn-generate">🔄 Generate Full Adlist Script</button>
+        <button onclick="window.copyOutput()" class="btn btn-copy">📋 Copy Script</button>
+        
+        <label for="outputScript" style="margin-top: 20px;">Hasil Script Mikrotik (.rsc):</label>
+        <textarea id="outputScript" rows="15" readonly placeholder="Klik tombol Generate Script..." style="height:300px; width:100%; box-sizing:border-box; padding:10px;"></textarea>
+    </div>
+</main>
+<footer><p style="text-align:center; padding:20px; color:#777;">&copy; 2025 DmiBot Projects</p></footer>
+
+<script src="modules/adlist_logic.js"></script>
+</body>
+</html>

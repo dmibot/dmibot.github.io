@@ -3,86 +3,358 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mikrotik Load Balance Generator</title>
+<title>Mikrotik Ultimate Generator (Full Features)</title>
 <style>
-  body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-  .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-  .hidden { display: none; }
-  .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-  .tabs button { padding: 10px 20px; cursor: pointer; border: none; background: #ddd; border-radius: 5px; }
-  .tabs button.active { background: #2196F3; color: white; font-weight: bold; }
-  input, select, textarea { width: 100%; padding: 8px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+  /* CSS PRO STYLE */
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; padding: 20px; color: #333; margin: 0; }
+  .container { max-width: 950px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  
+  h1 { text-align: center; color: #1565C0; margin: 0 0 10px 0; font-weight: 800; }
+  p.subtitle { text-align: center; color: #666; margin: 0 0 30px 0; font-size: 0.95rem; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 8px; margin-bottom: 25px; background: #f5f5f5; padding: 5px; border-radius: 8px; }
+  .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #666; border-radius: 6px; transition: 0.2s; }
+  .tab-btn:hover { background: #e0e0e0; color: #333; }
+  .tab-btn.active { background: #1565C0; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+  /* CARDS */
+  .section { display: none; animation: slideUp 0.3s ease-out; }
+  .section.active { display: block; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 15px; background: #fff; }
+  .card h3 { margin-top: 0; color: #444; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.1rem; }
+  
+  .highlight { background: #e3f2fd; border-color: #bbdefb; }
+  .warning { background: #fff3cd; border-color: #ffeeba; color: #856404; }
+
+  /* INPUTS */
+  label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.85rem; color: #555; }
+  input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; font-family: 'Consolas', monospace; font-size: 14px; box-sizing: border-box; }
+  input:focus, select:focus { outline: none; border-color: #1565C0; box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1); }
+  textarea { height: 180px; resize: vertical; background: #fafafa; }
+
+  /* ISP ROW */
+  .isp-row { display: grid; grid-template-columns: 2fr 2fr 3fr auto; gap: 10px; align-items: start; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 10px; }
+  
+  /* BUTTONS */
+  .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; color: white; transition: 0.2s; font-size: 0.9rem; }
+  .btn-blue { background: #1565C0; } .btn-blue:hover { background: #0D47A1; }
+  .btn-green { background: #2E7D32; } .btn-green:hover { background: #1B5E20; }
+  .btn-red { background: #C62828; padding: 8px 12px; height: 40px; margin-top: 23px; } .btn-red:hover { background: #B71C1C; }
+  .btn-add { background: #FF9800; color: #333; } .btn-add:hover { background: #F57C00; }
+  .w-100 { width: 100%; }
+
+  .badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+  .badge-auto { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>⚙️ Load Balance Generator</h1>
-</header>
+<div class="container">
+  <header>
+    <h1>⚙️ Mikrotik Ultimate Generator</h1>
+    <p class="subtitle">Full Features: DoH • Auto IP Calc • Hybrid WAN • Failover Recursive</p>
+  </header>
 
-<main>
   <div class="tabs">
-    <button id="tab1" class="active" onclick="openTab(1)">1. Basic Setup</button>
-    <button id="tab2" onclick="openTab(2)">2. Routing & PCC</button>
-    <button id="tab3" onclick="combineConfigs()">3. Combine & Export</button>
+    <button class="tab-btn active" onclick="switchTab('tab1')">1. Basic Setup</button>
+    <button class="tab-btn" onclick="switchTab('tab2')">2. Routing & PCC</button>
+    <button class="tab-btn" onclick="generateFinal()">3. Result</button>
   </div>
-  
-  <div id="section1" class="card"></div>
-  <div id="section2" class="card hidden"></div>
-  
-  <div id="section3" class="card hidden">
-    <h3>📦 Final Configuration</h3>
-    <textarea id="combinedOutput" readonly style="height:400px; font-family: monospace;"></textarea>
-    <button onclick="copyAll()" style="width:100%; margin-top:10px; background:#4CAF50; color:white; border:none; padding:12px; cursor:pointer;">📋 Copy All Scripts</button>
+
+  <div id="tab1" class="section active">
+    
+    <div class="card">
+      <h3>🌍 WAN / ISP Configuration</h3>
+      <div class="highlight" style="padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+        <p style="margin:0; font-size:0.9rem;">
+          ℹ️ <strong>Auto IP Calculation:</strong> Masukkan Gateway ISP (misal <code>192.168.1.1</code>), sistem akan otomatis membuat IP Address Router (<code>192.168.1.2</code>) dan DHCP Client sebagai backup.
+        </p>
+      </div>
+      
+      <div id="ispContainer"></div>
+      <button class="btn btn-add" onclick="addIsp()">+ Tambah ISP</button>
+    </div>
+
+    <div class="card">
+      <h3>🏠 LAN & Bridge</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+          <label>IP Address LAN (CIDR):</label>
+          <input type="text" id="ipLan" value="192.168.10.1/24">
+        </div>
+        <div>
+          <label>Bridge Ports (Pisahkan koma):</label>
+          <input type="text" id="lanPorts" value="ether3, ether4, ether5">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🛡️ DNS & DoH (DNS over HTTPS)</h3>
+      <label>DNS Provider (DoH):</label>
+      <select id="dohProvider">
+        <option value="https://dns.google/dns-query">Google (Default)</option>
+        <option value="https://cloudflare-dns.com/dns-query">Cloudflare</option>
+        <option value="https://dns.adguard.com/dns-query">AdGuard (Block Ads)</option>
+        <option value="disable">Non-aktifkan DoH</option>
+      </select>
+      
+      <label>DNS Servers (Fallback):</label>
+      <input type="text" id="dnsServer" value="8.8.8.8, 1.1.1.1">
+    </div>
   </div>
-</main>
+
+  <div id="tab2" class="section">
+    <div class="card highlight">
+      <h3>🧭 Routing Options</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+          <label>RouterOS Version:</label>
+          <select id="rosVer">
+            <option value="7">RouterOS v7 (Modern)</option>
+            <option value="6">RouterOS v6 (Legacy)</option>
+          </select>
+        </div>
+        <div>
+          <label>Failover Method:</label>
+          <select id="failMode">
+            <option value="RECURSIVE">Recursive (Ping 8.8.8.8/1.1.1.1) - Lebih Akurat</option>
+            <option value="GATEWAY">Check Gateway (Ping ISP Gateway)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <button class="btn btn-blue w-100" onclick="previewRouting()">🔄 Generate Routing Preview</button>
+    <textarea id="previewArea" readonly style="margin-top:15px;" placeholder="Klik tombol generate..."></textarea>
+  </div>
+
+  <div id="tab3" class="section">
+    <div class="card warning">
+      ⚠️ <strong>PENTING:</strong> Script ini mengandung konfigurasi <strong>NAT, Firewall Mangle, dan Routing</strong>. Pastikan router dalam kondisi reset (No Default Config) untuk hasil terbaik.
+    </div>
+    <textarea id="finalOutput" readonly style="height: 450px;"></textarea>
+    <button class="btn btn-green w-100" onclick="copyResult()">📋 Salin Semua Script ke Clipboard</button>
+  </div>
+</div>
 
 <script>
-  // Global Variable
-  window.ispList = []; 
+  let ispCount = 0;
 
-  function openTab(num){
-    document.querySelectorAll('.tabs button').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('main .card').forEach(sec => sec.classList.add('hidden'));
-    document.getElementById('tab'+num).classList.add('active');
-    document.getElementById('section'+num).classList.remove('hidden');
-  }
-
-  function combineConfigs(){
-    openTab(3);
+  // === UI LOGIC ===
+  function switchTab(tabId) {
+    document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
     
-    // Panggil fungsi dari file JS eksternal
-    // Pastikan file JS sudah terload
-    if(typeof window.generateBasicSetup !== 'function') {
-        alert("Gagal memuat script! Pastikan file .js ada di folder yang sama.");
-        return;
-    }
-
-    const basicRes = window.generateBasicSetup();
-    if(basicRes.error) {
-        document.getElementById("combinedOutput").value = basicRes.msg;
-        return;
-    }
-
-    const routingRes = window.generateRoutingScript(window.ispList);
-    if(routingRes.error) {
-        document.getElementById("combinedOutput").value = basicRes.script + "\n\n" + routingRes.msg;
-        return;
-    }
-
-    const header = `# ==========================================\n# MIKROTIK CONFIG GENERATOR\n# ==========================================\n\n`;
-    document.getElementById("combinedOutput").value = header + basicRes.script + "\n\n" + routingRes.script;
+    // Set active tab button styling
+    const idx = ['tab1', 'tab2', 'tab3'].indexOf(tabId);
+    document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+    
+    if(tabId === 'tab3') generateFinal();
   }
 
-  function copyAll(){
-    const ta = document.getElementById("combinedOutput");
-    ta.select(); navigator.clipboard.writeText(ta.value);
-    alert("Script disalin!");
+  function addIsp(nameVal='', ifaceVal='', gwVal='') {
+    ispCount++;
+    const container = document.getElementById('ispContainer');
+    const div = document.createElement('div');
+    div.className = 'isp-row';
+    div.id = `ispRow${ispCount}`;
+    
+    if(!nameVal) nameVal = `ISP${ispCount}`;
+    if(!ifaceVal) ifaceVal = `ether${ispCount}`;
+    
+    div.innerHTML = `
+      <div>
+        <label>Nama ISP</label>
+        <input type="text" class="ispName" value="${nameVal}">
+      </div>
+      <div>
+        <label>Interface WAN</label>
+        <input type="text" class="ispIface" value="${ifaceVal}">
+      </div>
+      <div>
+        <label>Gateway IP <span class="badge badge-auto">Auto IP Calc</span></label>
+        <input type="text" class="ispGw" value="${gwVal}" placeholder="Cth: 192.168.1.1">
+      </div>
+      <button class="btn btn-red" onclick="removeIsp('ispRow${ispCount}')">Hapus</button>
+    `;
+    container.appendChild(div);
   }
+
+  function removeIsp(id) { document.getElementById(id).remove(); }
+
+  // === CORE GENERATOR ENGINE ===
+  function getConfigs() {
+    const ispList = [];
+    let hasError = false;
+
+    // 1. COLLECT DATA ISP
+    document.querySelectorAll('.isp-row').forEach(row => {
+      const name = row.querySelector('.ispName').value.trim().replace(/\s/g, '_');
+      const iface = row.querySelector('.ispIface').value.trim();
+      const gw = row.querySelector('.ispGw').value.trim();
+
+      if(!name || !iface || !gw) hasError = true;
+      ispList.push({ name, iface, gw });
+    });
+
+    const ipLan = document.getElementById('ipLan').value;
+    const lanPorts = document.getElementById('lanPorts').value;
+    const dns = document.getElementById('dnsServer').value;
+    const doh = document.getElementById('dohProvider').value;
+    
+    // IP Math (Untuk LAN)
+    const ipParts = ipLan.split('/')[0].split('.');
+    const network = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0`;
+
+    // === SCRIPT 1: BASIC SETUP (Fitur Auto IP & DoH Kembali) ===
+    let basic = `# === 1. BASIC CONFIGURATION ===\n`;
+    
+    // Bridge LAN
+    basic += `/interface bridge add name="bridge-LAN" protocol-mode=rstp arp=enabled comment="LAN Bridge"\n`;
+    if(lanPorts) {
+        lanPorts.split(',').forEach(p => {
+            basic += `/interface bridge port add bridge="bridge-LAN" interface="${p.trim()}"\n`;
+        });
+    }
+
+    // IP LAN & DHCP Server
+    basic += `/ip address add address="${ipLan}" interface="bridge-LAN" network="${network}"\n`;
+    basic += `/ip pool add name="LAN-Pool" ranges="${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.2-${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.254"\n`;
+    basic += `/ip dhcp-server add name="LAN-DHCP" interface="bridge-LAN" address-pool="LAN-Pool" lease-time=4h disabled=no\n`;
+    basic += `/ip dhcp-server network add address="${network}/24" gateway="${ipParts.join('.')}" dns-server="${dns}"\n`;
+
+    // DNS & DoH Logic (RESTORED)
+    basic += `\n# DNS & DoH Security\n`;
+    basic += `/ip dns set allow-remote-requests=yes servers="${dns}"`;
+    if(doh !== 'disable') {
+        basic += ` use-doh-server="${doh}" verify-doh-cert=no`;
+    }
+    basic += `\n`;
+    basic += `/ip firewall filter add chain=input protocol=udp dst-port=53 in-interface-list=!LAN action=drop comment="Security: Drop External DNS"\n`;
+
+    // WAN Logic (RESTORED: Auto IP Calc + Hybrid DHCP)
+    basic += `\n# WAN CONFIGURATION\n`;
+    ispList.forEach(isp => {
+        // Kalkulasi IP (.1 jadi .2, .254 jadi .253)
+        const gwParts = isp.gw.split('.');
+        let lastOctet = parseInt(gwParts[3]);
+        let newOctet = (lastOctet === 1) ? 2 : (lastOctet === 254 ? 253 : lastOctet + 1);
+        const calcIp = `${gwParts[0]}.${gwParts[1]}.${gwParts[2]}.${newOctet}`;
+
+        // 1. Static IP (Main)
+        basic += `/ip address add address="${calcIp}/24" interface="${isp.iface}" comment="${isp.name} Static IP"\n`;
+        
+        // 2. DHCP Client Backup (Feature dari script lama Anda)
+        // add-default-route=no agar tidak bentrok dengan static routing
+        basic += `/ip dhcp-client add interface="${isp.iface}" disabled=no add-default-route=no use-peer-dns=no comment="${isp.name} DHCP Backup"\n`;
+    });
+
+
+    // === SCRIPT 2: ROUTING & MANGLE (Fitur Bypass & Recursive Kembali) ===
+    const rosVer = document.getElementById('rosVer').value;
+    const failMode = document.getElementById('failMode').value;
+    let route = `# === 2. ROUTING, MANGLE & NAT ===\n`;
+
+    // Address List (Bypass IP Local - RESTORED)
+    route += `/ip firewall address-list\n`;
+    route += `add list=LOCAL_NET address=192.168.0.0/16\n`;
+    route += `add list=LOCAL_NET address=10.0.0.0/8\n`;
+    route += `add list=LOCAL_NET address=172.16.0.0/12\n\n`;
+
+    // Mangle Rules
+    route += `/ip firewall mangle\n`;
+    ispList.forEach((isp, idx) => {
+        // Input Connection Mark
+        route += `add chain=input in-interface="${isp.iface}" action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes\n`;
+        
+        // PCC Rules (With Local Bypass)
+        route += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${ispList.length}/${idx} action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="PCC ${isp.name}"\n`;
+        
+        // Mark Routing
+        route += `add chain=prerouting in-interface="bridge-LAN" connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
+        
+        // Output Rule
+        route += `add chain=output connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
+    });
+
+    // NAT (Fix Masquerade)
+    route += `\n# NAT CONFIGURATION\n/ip firewall nat\n`;
+    ispList.forEach(isp => {
+        route += `add chain=srcnat out-interface="${isp.iface}" action=masquerade comment="NAT ${isp.name}"\n`;
+    });
+
+    // Routing Tables (v7 support)
+    if(rosVer === '7') {
+        route += `\n# Routing Tables\n`;
+        ispList.forEach(isp => route += `/routing table add name="to_${isp.name}" fib\n`);
+    }
+
+    // Routes Definition
+    route += `\n# PCC Routes\n/ip route\n`;
+    ispList.forEach(isp => {
+        const param = (rosVer === '7') ? `routing-table="to_${isp.name}"` : `routing-mark="to_${isp.name}"`;
+        route += `add dst-address=0.0.0.0/0 gateway="${isp.gw}" ${param} distance=1 comment="PCC Route ${isp.name}" check-gateway=ping\n`;
+    });
+
+    // Failover Logic (Recursive/Gateway)
+    route += `\n# Failover Config (${failMode})\n`;
+    ispList.forEach((isp, idx) => {
+        const dist = idx + 1;
+        if(failMode === 'RECURSIVE') {
+            // Ping Google (8.8.8.8) via ISP1, Cloudflare (1.1.1.1) via ISP2, dst.
+            const target = (idx % 2 === 0) ? '8.8.8.8' : '1.1.1.1';
+            const target2 = (idx % 2 === 0) ? '8.8.4.4' : '1.0.0.1'; // Backup recursive target
+            
+            route += `add dst-address=${target} gateway=${isp.gw} scope=10 comment="Recursive Check ${isp.name}"\n`;
+            route += `add dst-address=0.0.0.0/0 gateway=${target} distance=${dist} target-scope=11 check-gateway=ping\n`;
+        } else {
+            // Standard Check Gateway
+            route += `add dst-address=0.0.0.0/0 gateway=${isp.gw} distance=${dist} check-gateway=ping comment="Main Route ${isp.name}"\n`;
+        }
+    });
+
+    return { basic, route, hasError };
+  }
+
+  // === HANDLERS ===
+  function previewRouting() {
+    const data = getConfigs();
+    const area = document.getElementById('previewArea');
+    if(data.hasError) {
+      area.value = "⚠️ ERROR: Data ISP (Nama/Interface/Gateway) belum lengkap.";
+    } else {
+      area.value = data.route;
+    }
+  }
+
+  function generateFinal() {
+    const data = getConfigs();
+    const area = document.getElementById('finalOutput');
+    if(data.hasError) {
+      area.value = "⚠️ ERROR: Mohon lengkapi semua field ISP di Tab 1.";
+      return;
+    }
+    const header = `# ==========================================\n# MIKROTIK ULTIMATE CONFIG\n# Generated: ${new Date().toLocaleString()}\n# Features: PCC, DoH, Auto IP, Failover\n# ==========================================\n\n`;
+    area.value = header + data.basic + "\n\n" + data.route;
+  }
+
+  function copyResult() {
+    const area = document.getElementById('finalOutput');
+    area.select();
+    navigator.clipboard.writeText(area.value).then(() => alert("✅ Skrip berhasil disalin!"));
+  }
+
+  // Init
+  window.onload = () => {
+    addIsp("Telkom", "ether1", "192.168.10.1");
+    addIsp("Biznet", "ether2", "192.168.20.1");
+  };
 </script>
-
-<script src="lb_basic_setup.js"></script>
-<script src="lb_routing_pcc.js"></script>
 
 </body>
 </html>

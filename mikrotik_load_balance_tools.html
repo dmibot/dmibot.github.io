@@ -3,25 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mikrotik Load Balance Generator (Full Restore)</title>
+<title>Mikrotik Load Balance Generator (Final Stability Fix)</title>
 <style>
-  /* [CSS DIMASUKKAN DI SINI JIKA MENGGUNAKAN STYLE.CSS EXTERNAL] */
   body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; padding: 20px; color: #333; }
   .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
   .hidden { display: none; }
   .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
   .tabs button { padding: 12px 20px; cursor: pointer; border: none; background: #e0e0e0; border-radius: 5px; font-weight: bold; color: #555; transition: 0.2s; }
   .tabs button.active { background: #2196F3; color: white; }
+  
   input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: monospace; }
   label { font-weight: 600; font-size: 0.9rem; color: #444; }
   h3 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
   .btn { padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; margin-top: 5px; }
   .btn-green { background: #388E3C; }
   .btn-copy { background: #607D8B; margin-top: 10px; }
   .isp-row { display: grid; grid-template-columns: 2fr 2fr 3fr auto; gap: 10px; align-items: center; background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
 </style>
 </head>
-<body onload="initApp()">
+<body>
 
 <header style="text-align: center; margin-bottom: 20px;">
   <h1>⚙️ Mikrotik Load Balance Tools</h1>
@@ -59,7 +60,6 @@
   function combineConfigs(){
     openTab(3);
     
-    // Panggil fungsi yang diexport dari file JS
     if(typeof window.generateBasicScript !== 'function' || typeof window.generateRoutingScript !== 'function') {
         document.getElementById("combinedOutput").value = "⚠️ ERROR: Script JS belum dimuat. Pastikan file ada di folder ./modules/.";
         return;
@@ -87,20 +87,10 @@
     ta.select(); navigator.clipboard.writeText(ta.value);
     alert("✅ Full Script Copied!");
   }
-
-  // PENTING: Fungsi inisialisasi aplikasi. Memanggil render UI.
-  function initApp() {
-    if (typeof window.renderBasicUI === 'function') {
-        window.renderBasicUI();
-    }
-    if (typeof window.renderRoutingUI === 'function') {
-        window.renderRoutingUI();
-    }
-  }
 </script>
 
-<script src="modules/lb_basic_setup.js"></script>
-<script src="modules/lb_routing_pcc.js"></script>
+<script src="modules/lb_basic_setup.js" defer></script>
+<script src="modules/lb_routing_pcc.js" defer></script>
 
 </body>
 </html>

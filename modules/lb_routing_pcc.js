@@ -39,7 +39,7 @@ window.generateRoutingScript = function(ispList) {
     const failMode = document.getElementById("failMode").value;
     let script = `# === 2. ROUTING, PCC & NAT ===\n`;
 
-    // Address List (Bypass Local IP - DUKUNGAN PENUH)
+    // Address List (Bypass Local IP)
     script += `/ip firewall address-list\n`;
     script += `add list=LOCAL_NET address=192.168.0.0/16\n`;
     script += `add list=LOCAL_NET address=10.0.0.0/8\n`;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mikrotik Load Balance Tools | DmiBot</title>
+<title>Mikrotik Load Balance Tools | dmibot</title>
 <link rel="icon" href="Mikrotik.svg">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -20,14 +20,14 @@
     <button id="tab3" onclick="combineConfigs()">3. Combine & Export</button>
   </div>
   
-  <div id="section1" class="card"><p>⏳ Loading Module 1...</p></div>
-  <div id="section2" class="card hidden"><p>⏳ Loading Module 2...</p></div>
+  <div id="section1" class="card"></div>
+  <div id="section2" class="card hidden"></div>
   
   <div id="section3" class="card hidden">
     <h3>📦 Final Configuration</h3>
-    <p>Skrip di bawah ini adalah gabungan otomatis dari Tab 1 & Tab 2 berdasarkan data <strong>TERKINI</strong>.</p>
-    <textarea id="combinedOutput" readonly placeholder="Klik tab 'Combine & Export'..." style="height:300px;"></textarea>
-    <button onclick="copyAll()" style="width:100%; margin-top:10px;">📋 Copy All Scripts</button>
+    <p>Skrip di bawah ini adalah gabungan otomatis dari Tab 1 & Tab 2 berdasarkan data <strong>TERBARU</strong>.</p>
+    <textarea id="combinedOutput" readonly placeholder="Klik tab 'Combine & Export'..." style="height:300px; width:100%; box-sizing:border-box; padding:10px;"></textarea>
+    <button onclick="copyAll()" style="width:100%; margin-top:10px; background:#4CAF50; color:white; border:none; padding:12px; border-radius:5px; cursor:pointer; font-size:1rem;">📋 Copy All Scripts</button>
   </div>
 </main>
 <footer><p style="text-align:center; padding:20px; color:#777;">&copy; 2025 DmiBot Projects</p></footer>
@@ -46,19 +46,18 @@
     document.getElementById('section'+num).classList.remove('hidden');
   }
 
-  // LOGIC VITAL: REAL-TIME COMBINE
+  // === REAL-TIME COMBINE LOGIC ===
   function combineConfigs(){
-    openTab(3); // Pindah tab dulu
+    openTab(3); // Pindah ke tab 3
     
-    // 1. Paksa Generate Basic (untuk update ispList & ambil script basic)
+    // 1. Paksa Generate Basic (untuk update window.ispList)
     const basicRes = window.generateBasicSetup();
     if(basicRes.error) {
         document.getElementById("combinedOutput").value = basicRes.msg;
         return;
     }
 
-    // 2. Paksa Generate Routing (menggunakan ispList yang BARU SAJA diupdate di langkah 1)
-    //    Kita pass window.ispList yang sudah fresh
+    // 2. Paksa Generate Routing (pakai window.ispList terbaru)
     const routingRes = window.generateRoutingScript(window.ispList);
     if(routingRes.error) {
         document.getElementById("combinedOutput").value = basicRes.script + "\n\n" + routingRes.msg;

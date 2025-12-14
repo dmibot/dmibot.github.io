@@ -1,3 +1,8 @@
+#!/bin/bash
+
+echo "📝 Mengupdate README.md dengan Daftar Fitur Lengkap..."
+
+cat << 'EOF' > README.md
 # Mikrotik Tools Portal | DmiBot
 
 Portal web *All-in-One* untuk generator konfigurasi Mikrotik RouterOS otomatis. Dibuat dengan logika JavaScript modular yang berjalan sepenuhnya di sisi klien (browser).
@@ -65,3 +70,6 @@ Jika ingin menjalankan tool ini tanpa internet:
 
 ---
 &copy; 2025 **DmiBot Projects**. Dibuat dengan ❤️ untuk komunitas Mikrotik Indonesia.
+EOF
+
+echo "✅ README.md berhasil diperbarui dengan dokumentasi lengkap!"

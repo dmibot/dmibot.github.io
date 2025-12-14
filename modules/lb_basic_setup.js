@@ -1,67 +1,58 @@
 // === File: modules/lb_basic_setup.js ===
 
-// 1. Fungsi Render UI (Dipanggil dari HTML onload)
-window.renderBasicUI = function() {
-    // 1.1 Render HTML
-    document.getElementById("section1").innerHTML = `
-    <h3>🧱 Basic Network Configuration</h3>
+// NOTE: Merender UI langsung saat file dimuat, sesuai pola aslinya.
 
-    <div style="background:#e3f2fd; padding:15px; border-radius:5px; margin-bottom:15px;">
-        <p style="margin:0; font-size:0.9rem;">
-            ✅ <strong>Auto Calculation:</strong> Masukkan Gateway ISP (cth: 192.168.1.1). Script otomatis membuat IP Address Router dan DHCP Client Backup.
-        </p>
+// 1. Render UI Tab 1
+document.getElementById("section1").innerHTML = `
+<h3>🧱 Basic Network Configuration</h3>
+
+<div style="background:#e3f2fd; padding:15px; border-radius:5px; margin-bottom:15px;">
+    <p style="margin:0; font-size:0.9rem;">
+        ✅ <strong>Auto Calculation:</strong> Masukkan Gateway ISP (cth: 192.168.1.1). Script otomatis membuat IP Address Router dan DHCP Client Backup.
+    </p>
+</div>
+
+<div id="ispContainer"></div>
+<button id="addIspBtn" class="btn" style="background:#1976D2; width:auto;">+ Tambah ISP</button>
+
+<hr>
+
+<h3>🏠 LAN & DNS</h3>
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+    <div>
+        <label>IP Address LAN:</label>
+        <input id="ipLan" type="text" value="192.168.10.1/24">
     </div>
-
-    <div id="ispContainer"></div>
-    <button id="addIspBtn" class="btn" style="background:#1976D2; width:auto;">+ Tambah ISP</button>
-
-    <hr>
-
-    <h3>🏠 LAN & DNS</h3>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-        <div>
-            <label>IP Address LAN:</label>
-            <input id="ipLan" type="text" value="192.168.10.1/24">
-        </div>
-        <div>
-            <label>Bridge Ports (csv):</label>
-            <input id="lanPorts" type="text" value="ether3, ether4, ether5">
-        </div>
+    <div>
+        <label>Bridge Ports (csv):</label>
+        <input id="lanPorts" type="text" value="ether3, ether4, ether5">
     </div>
+</div>
 
-    <label>DoH Provider (Quad9 RESTORED):</label>
-    <select id="dohProvider">
-        <option value="https://dns.google/dns-query">Google</option>
-        <option value="https://cloudflare-dns.com/dns-query">Cloudflare</option>
-        <option value="https://dns.quad9.net/dns-query">Quad9 (RESTORED)</option>
-        <option value="https://dns.adguard.com/dns-query">AdGuard</option>
-        <option value="disable">Non-aktifkan DoH</option>
-    </select>
+<label>DoH Provider (Quad9 RESTORED):</label>
+<select id="dohProvider">
+    <option value="https://dns.google/dns-query">Google</option>
+    <option value="https://cloudflare-dns.com/dns-query">Cloudflare</option>
+    <option value="https://dns.quad9.net/dns-query">Quad9 (RESTORED)</option>
+    <option value="https://dns.adguard.com/dns-query">AdGuard</option>
+    <option value="disable">Non-aktifkan DoH</option>
+</select>
 
-    <label>DNS Fallback:</label>
-    <input id="dnsServer" value="8.8.8.8, 1.1.1.1">
+<label>DNS Fallback:</label>
+<input id="dnsServer" value="8.8.8.8, 1.1.1.1">
 
-    <hr>
-    <button onclick="window.previewBasic()" class="btn btn-green">🔄 Generate Basic Script</button>
-    <textarea id="output_basic" readonly placeholder="Hasil script Basic Setup..." style="height:150px; margin-top:10px;"></textarea>
-    <button onclick="window.copyBasic()" class="btn btn-copy">📋 Copy Basic Script</button>
-    `;
-    
-    // 1.2 Tambahkan Event Listener setelah UI dimuat
-    document.getElementById('addIspBtn').addEventListener('click', window.addIsp);
+<hr>
+<button onclick="window.previewBasic()" class="btn btn-green">🔄 Generate Basic Script</button>
+<textarea id="output_basic" readonly placeholder="Hasil script Basic Setup..." style="height:150px; margin-top:10px;"></textarea>
+<button onclick="window.copyBasic()" class="btn btn-copy">📋 Copy Basic Script</button>
+`;
 
-    // 1.3 Tambahkan ISP Default
-    window.addIsp("Telkom", "ether1", "192.168.10.1");
-    window.addIsp("Biznet", "ether2", "192.168.20.1");
-};
-
-// 2. Helper Functions
+// 2. Helper Functions (Ditempel ke window agar bisa diakses HTML dan JS lain)
 const ispCont = document.getElementById("ispContainer");
 
 window.addIsp = function(name="", iface="", gw="") {
-    if (typeof name !== 'string') { // Jika dipanggil dari event listener, name adalah object event
-        name = ""; iface = ""; gw = "";
-    }
+    // Logic untuk handling klik tombol tanpa parameter, atau penambahan default
+    if (typeof name !== 'string') { name = ""; iface = ""; gw = ""; } 
     
     const count = ispCont.children.length + 1;
     if(!name) name = "ISP" + count;
@@ -88,6 +79,7 @@ window.generateBasicScript = function() {
     const rows = document.querySelectorAll(".isp-row");
     let hasError = false;
 
+    // 1. Collect Data & Build WAN Script
     rows.forEach(row => {
         const name = row.querySelector(".ispName").value.trim().replace(/\s/g, "_");
         const iface = row.querySelector(".ispIface").value.trim();
@@ -109,7 +101,7 @@ window.generateBasicScript = function() {
 
     if(hasError) return { error: true, msg: "⚠️ Lengkapi semua data ISP (Nama, Interface, Gateway)!" };
 
-    // LAN & DNS Logic
+    // 2. LAN & DNS Logic
     const ipLan = document.getElementById("ipLan").value;
     const ports = document.getElementById("lanPorts").value;
     const dns = document.getElementById("dnsServer").value;
@@ -151,3 +143,18 @@ window.copyBasic = function() {
     ta.select(); navigator.clipboard.writeText(ta.value);
     alert("Basic Script Copied!");
 };
+
+// 5. PENTING: Inisialisasi setelah seluruh file dimuat
+document.addEventListener('DOMContentLoaded', function() {
+    // Tambahkan event listener untuk tombol +ISP setelah UI di-render
+    const addButton = document.getElementById('addIspBtn');
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            window.addIsp(); // Panggil fungsi addIsp tanpa parameter
+        });
+    }
+    
+    // Panggil fungsi untuk menambahkan ISP default
+    window.addIsp("Telkom", "ether1", "192.168.10.1");
+    window.addIsp("Biznet", "ether2", "192.168.20.1");
+});

@@ -1,37 +1,36 @@
 // === File: modules/lb_routing_pcc.js ===
 
 // 1. Render UI Tab 2
-window.renderRoutingUI = function() {
-    document.getElementById("section2").innerHTML = `
-    <h3>🧭 Routing & PCC Configuration</h3>
+document.getElementById("section2").innerHTML = `
+<h3>🧭 Routing & PCC Configuration</h3>
 
-    <div style="background:#e3f2fd; padding:15px; border-radius:5px; margin-bottom:15px; border:1px solid #bbdefb;">
-        <p style="margin:0; font-size:0.9rem;">ℹ️ Modul ini mengambil data ISP yang Anda input di Tab 1. Pastikan Tab 1 sudah diisi.</p>
+<div style="background:#e3f2fd; padding:15px; border-radius:5px; margin-bottom:15px; border:1px solid #bbdefb;">
+    <p style="margin:0; font-size:0.9rem;">ℹ️ Modul ini mengambil data ISP yang Anda input di Tab 1. Pastikan Tab 1 sudah diisi.</p>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+    <div>
+        <label>RouterOS Version:</label>
+        <select id="rosVer">
+            <option value="7">RouterOS v7 (Terbaru)</option>
+            <option value="6">RouterOS v6 (Lama)</option>
+        </select>
     </div>
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-        <div>
-            <label>RouterOS Version:</label>
-            <select id="rosVer">
-                <option value="7">RouterOS v7 (Terbaru)</option>
-                <option value="6">RouterOS v6 (Lama)</option>
-            </select>
-        </div>
-        <div>
-            <label>Failover Method:</label>
-            <select id="failMode">
-                <option value="RECURSIVE">Recursive (Ping 8.8.8.8 / 1.1.1.1)</option>
-                <option value="GATEWAY">Check Gateway (Ping ISP IP)</option>
-            </select>
-        </div>
+    <div>
+        <label>Failover Method:</label>
+        <select id="failMode">
+            <option value="RECURSIVE">Recursive (Ping 8.8.8.8 / 1.1.1.1)</option>
+            <option value="GATEWAY">Check Gateway (Ping ISP IP)</option>
+        </select>
     </div>
+</div>
 
-    <hr>
-    <button onclick="window.previewRouting()" class="btn btn-blue" style="width:100%;">🔄 Generate Routing Script</button>
-    <textarea id="output_routing" readonly placeholder="Hasil script Routing & PCC..." style="height:250px; margin-top:10px;"></textarea>
-    <button onclick="window.copyRouting()" class="btn btn-copy" style="width:100%;">📋 Copy Routing Script</button>
-    `;
-};
+<hr>
+<button onclick="window.previewRouting()" class="btn btn-blue" style="width:100%;">🔄 Generate Routing Script</button>
+<textarea id="output_routing" readonly placeholder="Hasil script Routing & PCC..." style="height:250px; margin-top:10px;"></textarea>
+<button onclick="window.copyRouting()" class="btn btn-copy" style="width:100%;">📋 Copy Routing Script</button>
+`;
+
 
 // 2. GENERATOR LOGIC (ROUTING)
 window.generateRoutingScript = function(ispList) {
@@ -50,7 +49,7 @@ window.generateRoutingScript = function(ispList) {
     // Mangle Rules
     script += `/ip firewall mangle\n`;
     ispList.forEach((isp, idx) => {
-        script += `add chain=input in-interface="bridge-LAN" action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="Input Mark ${isp.name}"\n`;
+        script += `add chain=input in-interface="${isp.iface}" action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="Input Mark ${isp.name}"\n`;
         // PCC Logic with Local IP Bypass
         script += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${ispList.length}/${idx} action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="PCC ${isp.name}"\n`;
         script += `add chain=prerouting in-interface="bridge-LAN" connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;

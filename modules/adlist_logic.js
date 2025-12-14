@@ -1,19 +1,30 @@
 // === Mikrotik DNS Adlist Logic Module ===
 
-// Mapping Adlist default yang sering digunakan
+// Mapping Adlist default yang sering digunakan (Daftar Agresif dari Permintaan Pengguna)
 const DEFAULT_ADLISTS = [
-    { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", name: "Steven Black Basic" }
+    // 1. SBC.io - Agresif (Fakenews, Gambling, Porn, Social)
+    { url: "http://sbc.io/hosts/alternates/fakenews-gambling-porn-social/hosts", name: "sbc.io - Full Block (Aggressive)" },
+    
+    // 2. IgorKha - AdGuard Aggregated (Menggunakan format Hosts/TXT yang kompatibel dengan Adlist Mikrotik)
+    { url: "https://raw.githubusercontent.com/IgorKha/mikrotik-adlist/main/hosts/adguard.txt", name: "IgorKha (AdGuard Aggregated)" },
+    
+    // 3. HaGeZi - Multi Ultimate (Sangat Agresif dan Luas)
+    { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.ultimate.txt", name: "HaGeZi Multi ULTIMATE Hosts" }
 ];
 
 const adlistCont = document.getElementById("adlistContainer");
 
 // Helper: Add Adlist URL Input
-window.addAdlistInput = function(url="") {
+window.addAdlistInput = function(url="", name="") {
     const div = document.createElement("div");
     div.className = "list-group";
     div.style.marginBottom = "10px";
     
+    // Menambahkan label untuk identifikasi list yang terisi otomatis
+    const listName = name ? `<p style="font-size:0.8rem; margin: 0 0 5px 0; color:#1976D2;">${name}</p>` : '';
+
     div.innerHTML = `
+        ${listName}
         <label style="font-size:0.9rem; font-weight:600;">Adlist URL:</label>
         <input type="text" class="adlistUrl" value="${url}" placeholder="https://..." required style="width:100%; padding:8px; box-sizing:border-box;">
         <button onclick="this.parentElement.remove()" class="btn-remove" style="background:#D32F2F; color:white; border:none; margin-top:5px; padding:5px 10px; font-size:0.8rem; border-radius:4px; cursor:pointer;">Hapus</button>
@@ -27,6 +38,7 @@ window.generateAdlistScript = function() {
     let script = `# ==========================================\n`;
     script += `# MIKROTIK DNS ADLIST CONFIG (.rsc)\n`;
     script += `# Generated: ${new Date().toLocaleString()}\n`;
+    script += `# WARNING: Daftar ini sangat agresif dan dapat memblokir fungsi non-iklan.\n`;
     script += `# ==========================================\n\n`;
 
     const cacheSize = document.getElementById("cacheSize").value;
@@ -72,7 +84,7 @@ window.generateAdlistScript = function() {
     
     if (whitelistDomains.length > 0) {
         whitelistDomains.forEach(domain => {
-            // FWD memastikan domain ini diproses oleh upstream DNS server (mengabaikan Adlist)
+            // FWD memastikan domain ini diteruskan ke Upstream DNS server (mengabaikan Adlist)
             script += `/ip dns static add name="${domain}" type=fwd comment="ADLIST-WHITELIST: ${domain}"\n`;
         });
         script += `# Whitelist ditambahkan. Gunakan type=fwd untuk memastikan domain tidak diblokir.\n`;
@@ -93,9 +105,10 @@ window.copyOutput = function() {
 
 // 3. Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    // Muat Adlist default saat UI pertama kali dimuat
-    const initialUrl = DEFAULT_ADLISTS[0].url;
-    window.addAdlistInput(initialUrl);
+    // Muat semua Adlist default saat UI pertama kali dimuat
+    DEFAULT_ADLISTS.forEach(item => {
+        window.addAdlistInput(item.url, item.name);
+    });
 
     // Tambahkan event listener untuk tombol 'Tambah Adlist'
     document.getElementById('addAdlistBtn').addEventListener('click', () => {

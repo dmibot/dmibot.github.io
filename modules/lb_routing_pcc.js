@@ -40,39 +40,54 @@ window.generateRoutingScript = function(ispList) {
     const failMode = document.getElementById("failMode").value;
     let script = `# === 2. ROUTING, PCC & NAT ===\n`;
 
-    // Address List (Bypass Local IP - DUKUNGAN PENUH)
+    // 1. Address List (Dipindahkan ke blok terpisah sesuai Mikrotik Script Order)
     script += `/ip firewall address-list\n`;
     script += `add list=LOCAL_NET address=192.168.0.0/16\n`;
     script += `add list=LOCAL_NET address=10.0.0.0/8\n`;
     script += `add list=LOCAL_NET address=172.16.0.0/12\n\n`;
 
-    // Mangle Rules
+    // 2. Mangle Rules (Dengan Bypass Optimal)
     script += `/ip firewall mangle\n`;
-    ispList.forEach((isp, idx) => {
+    
+    // 0. BYPASS KRITIS: Lewati semua lalu lintas yang berasal atau menuju IP Lokal
+    script += `add chain=prerouting src-address-list=LOCAL_NET dst-address-list=LOCAL_NET action=accept comment="BYPASS: LAN to LAN sebelum PCC"\n\n`;
+
+    // 1. INPUT MARK: Menandai koneksi yang masuk dari WAN ke router
+    ispList.forEach(isp => {
         script += `add chain=input in-interface="${isp.iface}" action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="Input Mark ${isp.name}"\n`;
-        // PCC Logic with Local IP Bypass
-        script += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${ispList.length}/${idx} action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="PCC ${isp.name}"\n`;
-        script += `add chain=prerouting in-interface="bridge-LAN" connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
-        script += `add chain=output connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
     });
 
-    // NAT (FIX: Masquerade wajib ada)
+    // 2. PREROUTING (PCC): Menandai koneksi baru dari LAN ke INTERNET
+    ispList.forEach((isp, idx) => {
+        // PCC Logic with Local IP Bypass
+        script += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${ispList.length}/${idx} action=mark-connection new-connection-mark="Telkom_conn" passthrough=yes comment="PCC Telkom"\n`;
+    });
+
+    // 3. MARK ROUTING
+    ispList.forEach(isp => {
+        script += `add chain=prerouting in-interface="bridge-LAN" connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
+    });
+
+    // 4. OUTPUT MARK: Memastikan traffic yang berasal dari router
+    ispList.forEach(isp => {
+        script += `add chain=output connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no comment="Output ${isp.name}"\n`;
+    });
+    
+    // 3. NAT (FIX: Masquerade wajib ada)
     script += `\n# NAT MASQUERADE\n/ip firewall nat\n`;
     ispList.forEach(isp => {
         script += `add chain=srcnat out-interface="${isp.iface}" action=masquerade comment="NAT ${isp.name}"\n`;
     });
 
-    // Routing Tables (v7)
+    // 4. Routing Tables & Routes
     if(ros === "7") {
         script += `\n# Routing Tables\n`;
         ispList.forEach(isp => script += `/routing table add name="to_${isp.name}" fib\n`);
     }
 
-    // Routes (PCC)
     script += `\n# PCC Routes\n/ip route\n`;
     ispList.forEach(isp => {
         const param = (ros === "7") ? `routing-table="to_${isp.name}"` : `routing-mark="to_${isp.name}"`;
-        // Static IP yang dibuat di Basic Setup
         script += `add dst-address=0.0.0.0/0 gateway="${isp.gw}" ${param} distance=1 comment="PCC ${isp.name}" check-gateway=ping\n`;
     });
 

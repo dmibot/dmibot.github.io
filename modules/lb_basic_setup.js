@@ -144,17 +144,24 @@ window.copyBasic = function() {
     alert("Basic Script Copied!");
 };
 
-// 5. PENTING: Inisialisasi setelah seluruh file dimuat
-document.addEventListener('DOMContentLoaded', function() {
-    // Tambahkan event listener untuk tombol +ISP setelah UI di-render
+// 5. PENTING: Initialization Logic (FIX TOMBOL +ISP)
+const initBasic = () => {
+    // 5.1 Tambahkan event listener untuk tombol +ISP setelah UI di-render
     const addButton = document.getElementById('addIspBtn');
     if (addButton) {
+        // Menggunakan addEventListener agar lebih clean dan fix masalah sebelumnya
         addButton.addEventListener('click', function() {
             window.addIsp(); // Panggil fungsi addIsp tanpa parameter
         });
     }
     
-    // Panggil fungsi untuk menambahkan ISP default
-    window.addIsp("Telkom", "ether1", "192.168.10.1");
-    window.addIsp("Biznet", "ether2", "192.168.20.1");
-});
+    // 5.2 Panggil fungsi untuk menambahkan ISP default jika container kosong
+    const ispContCheck = document.getElementById("ispContainer");
+    if (ispContCheck && ispContCheck.children.length === 0) {
+        window.addIsp("Telkom", "ether1", "192.168.10.1");
+        window.addIsp("Biznet", "ether2", "192.168.20.1");
+    }
+};
+
+// Panggil initBasic setelah seluruh file dimuat (untuk stabilitas)
+document.addEventListener('DOMContentLoaded', initBasic);

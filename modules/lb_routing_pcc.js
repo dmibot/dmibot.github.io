@@ -59,8 +59,8 @@ window.generateRoutingScript = function(ispList) {
 
     // 2. PREROUTING (PCC): Menandai koneksi baru dari LAN ke INTERNET
     ispList.forEach((isp, idx) => {
-        // PCC Logic with Local IP Bypass
-        script += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${ispList.length}/${idx} action=mark-connection new-connection-mark="Telkom_conn" passthrough=yes comment="PCC Telkom"\n`;
+        // FIX KRITIS: Memastikan new-connection-mark menggunakan nama ISP yang benar
+        script += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${ispList.length}/${idx} action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="PCC ${isp.name}"\n`;
     });
 
     // 3. MARK ROUTING
@@ -109,7 +109,6 @@ window.generateRoutingScript = function(ispList) {
 
 // 3. Button Actions (Exported to Window)
 window.previewRouting = function() {
-    // Refresh Basic dulu untuk update window.ispList
     if(typeof window.generateBasicScript === 'function') window.generateBasicScript();
     
     const res = window.generateRoutingScript(window.ispList);

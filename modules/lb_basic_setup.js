@@ -1,12 +1,13 @@
 // === File: modules/lb_basic_setup.js ===
 
-// Mapping DNS berdasarkan URL DoH (FIX: Sinkronisasi DNS)
+// Mapping DNS berdasarkan URL DoH
 const DOH_MAP = {
     "https://dns.google/dns-query": { ip: "8.8.8.8, 8.8.4.4", name: "Google" },
     "https://cloudflare-dns.com/dns-query": { ip: "1.1.1.1, 1.0.0.1", name: "Cloudflare" },
     "https://dns.quad9.net/dns-query": { ip: "9.9.9.9, 149.112.112.112", name: "Quad9" },
     "https://dns.adguard.com/dns-query": { ip: "94.140.14.14, 94.140.15.15", name: "AdGuard" }
 };
+const DEFAULT_FALLBACK_DNS = "8.8.8.8, 1.1.1.1";
 
 // 1. Render UI Tab 1
 document.getElementById("section1").innerHTML = `
@@ -35,7 +36,7 @@ document.getElementById("section1").innerHTML = `
     </div>
 </div>
 
-<label>DoH Provider (Quad9 RESTORED):</label>
+<label>DoH Provider (Pilih ini untuk sinkronisasi IP DNS):</label>
 <select id="dohProvider" onchange="window.syncDnsServers()">
     <option value="https://dns.google/dns-query">Google</option>
     <option value="https://cloudflare-dns.com/dns-query">Cloudflare</option>
@@ -44,8 +45,13 @@ document.getElementById("section1").innerHTML = `
     <option value="disable">Non-aktifkan DoH</option>
 </select>
 
-<label>DNS Fallback:</label>
-<input id="dnsServer" value="${DOH_MAP['https://dns.google/dns-query'].ip}">
+<div style="margin-top: 10px; margin-bottom: 10px;">
+    <input type="checkbox" id="manualDnsToggle" onchange="window.syncDnsServers()" style="width: auto; margin-right: 5px;">
+    <label for="manualDnsToggle" style="display: inline; font-weight: normal;">Gunakan IP DNS Manual (Override DoH Default)</label>
+</div>
+
+<label>DNS Fallback (IP Server):</label>
+<input id="dnsServer" value="${DOH_MAP['https://dns.google/dns-query'].ip}" disabled>
 
 <hr>
 <button onclick="window.previewBasic()" class="btn btn-green">🔄 Generate Basic Script</button>
@@ -76,16 +82,26 @@ window.addIsp = function(name="", iface="", gw="") {
     ispCont.appendChild(div);
 };
 
-// FIX: Fungsi sinkronisasi DNS
+// FIX: Fungsi sinkronisasi dan manual DNS
 window.syncDnsServers = function() {
     const dohSelect = document.getElementById("dohProvider");
     const dnsInput = document.getElementById("dnsServer");
+    const manualToggle = document.getElementById("manualDnsToggle");
     const selectedDoh = dohSelect.value;
 
-    if (selectedDoh === 'disable') {
-        dnsInput.value = "8.8.8.8, 1.1.1.1"; // Default umum jika DoH dinonaktifkan
-    } else if (DOH_MAP[selectedDoh]) {
-        dnsInput.value = DOH_MAP[selectedDoh].ip;
+    if (manualToggle.checked) {
+        dnsInput.disabled = false;
+        if (dnsInput.value === "") {
+             // Jika input manual kosong, berikan default universal
+            dnsInput.value = DEFAULT_FALLBACK_DNS; 
+        }
+    } else {
+        dnsInput.disabled = true;
+        if (selectedDoh === 'disable') {
+            dnsInput.value = DEFAULT_FALLBACK_DNS;
+        } else if (DOH_MAP[selectedDoh]) {
+            dnsInput.value = DOH_MAP[selectedDoh].ip;
+        }
     }
 };
 
@@ -119,12 +135,15 @@ window.generateBasicScript = function() {
     // 2. LAN & DNS Logic
     const ipLan = document.getElementById("ipLan").value;
     const ports = document.getElementById("lanPorts").value;
-    const dns = document.getElementById("dnsServer").value;
+    const dnsRaw = document.getElementById("dnsServer").value;
     const doh = document.getElementById("dohProvider").value;
     const ipParts = ipLan.split("/")[0].split(".");
     const network = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0`;
     
-    // START FIX: Menambahkan Interface List (Diperlukan oleh Firewall Filter)
+    // FIX SINTAKSIS: Bersihkan spasi berlebih pada input DNS
+    const dnsServers = dnsRaw.split(',').map(s => s.trim()).join(', ');
+    
+    // START FIX: Menambahkan Interface List
     script += `\n# INTERFACE LIST DEFINITION (FIX for in-interface-list error)\n`;
     script += `/interface list add name=LAN\n`;
     script += `/interface list add name=WAN\n`;
@@ -132,7 +151,6 @@ window.generateBasicScript = function() {
     script += `\n# LAN & Bridge Setup\n`;
     script += `/interface bridge add name="bridge-LAN" protocol-mode=rstp arp=enabled comment="LAN Bridge"\n`;
     
-    // Menambahkan bridge-LAN ke Interface List LAN
     script += `/interface list member add interface=bridge-LAN list=LAN\n`;
 
     if(ports) {
@@ -141,7 +159,6 @@ window.generateBasicScript = function() {
         });
     }
 
-    // Menambahkan Interface WAN ke Interface List WAN
     window.ispList.forEach(isp => {
         script += `/interface list member add interface=${isp.iface} list=WAN\n`;
     });
@@ -149,11 +166,11 @@ window.generateBasicScript = function() {
     script += `/ip address add address="${ipLan}" interface="bridge-LAN" network="${network}"\n`;
     script += `/ip pool add name="LAN-Pool" ranges="${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.2-${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.254"\n`;
     script += `/ip dhcp-server add name="LAN-DHCP" interface="bridge-LAN" address-pool="LAN-Pool" disabled=no\n`;
-    script += `/ip dhcp-server network add address="${network}/24" gateway="${ipParts.join('.')}" dns-server="${dns}"\n`;
+    script += `/ip dhcp-server network add address="${network}/24" gateway="${ipParts.join('.')}" dns-server="${dnsServers}"\n`; // DNS Clean
 
     // DNS & DoH
     script += `\n# DNS Configuration\n`;
-    script += `/ip dns set allow-remote-requests=yes servers="${dns}"`;
+    script += `/ip dns set allow-remote-requests=yes servers="${dnsServers}"`; // DNS Clean
     if(doh !== "disable") script += ` use-doh-server="${doh}" verify-doh-cert=no`;
     script += `\n`;
     script += `/ip firewall filter add chain=input protocol=udp dst-port=53 in-interface-list=!LAN action=drop comment="Security: Drop External DNS"\n`;
@@ -175,7 +192,6 @@ window.copyBasic = function() {
 
 // 5. Initialization Logic (FIX TOMBOL +ISP & LOAD DEFAULTS)
 const initBasic = () => {
-    // 5.1 Tambahkan event listener untuk tombol +ISP setelah UI di-render
     const addButton = document.getElementById('addIspBtn');
     if (addButton) {
         addButton.addEventListener('click', function() {
@@ -183,14 +199,14 @@ const initBasic = () => {
         });
     }
     
-    // 5.2 LOAD DEFAULT ISPS (Telkom & Fastlink)
+    // LOAD DEFAULT ISPS
     const ispContCheck = document.getElementById("ispContainer");
     if (ispContCheck && ispContCheck.children.length === 0) {
-        window.addIsp("Telkom", "ether4", "172.16.0.1"); // Default 1
-        window.addIsp("Fastlink", "ether5", "172.8.45.1"); // Default 2
+        window.addIsp("Telkom", "ether4", "172.16.0.1");
+        window.addIsp("Fastlink", "ether5", "172.8.45.1");
     }
     
-    // 5.3 Sync DNS saat pertama kali dimuat
+    // Sync DNS saat pertama kali dimuat (akan mengisi default Google)
     window.syncDnsServers();
 };
 

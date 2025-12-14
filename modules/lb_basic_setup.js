@@ -1,144 +1,109 @@
-// === File: lb_basic_setup.js ===
+// === File: modules/lb_routing_pcc.js ===
 
-// 1. Render UI Tab 1
-document.getElementById("section1").innerHTML = `
-<h3>🧱 Basic Network Configuration</h3>
+// 1. Render UI Tab 2
+window.renderRoutingUI = function() {
+    document.getElementById("section2").innerHTML = `
+    <h3>🧭 Routing & PCC Configuration</h3>
 
-<div style="background:#e3f2fd; padding:15px; border-radius:5px; margin-bottom:15px;">
-    <p style="margin:0; font-size:0.9rem;">
-        ✅ <strong>Auto Calculation:</strong> Masukkan Gateway ISP (cth: 192.168.1.1). Script otomatis membuat IP Address Router dan DHCP Client Backup.
-    </p>
-</div>
-
-<div id="ispContainer"></div>
-<button onclick="window.addIsp()" class="btn" style="background:#1976D2; width:auto;">+ Tambah ISP</button>
-
-<hr>
-
-<h3>🏠 LAN & DNS</h3>
-<div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-    <div>
-        <label>IP Address LAN:</label>
-        <input id="ipLan" type="text" value="192.168.10.1/24">
+    <div style="background:#e3f2fd; padding:15px; border-radius:5px; margin-bottom:15px;">
+        <p style="margin:0; font-size:0.9rem;">ℹ️ Modul ini mengambil data ISP yang Anda input di Tab 1. Pastikan Tab 1 sudah diisi.</p>
     </div>
-    <div>
-        <label>Bridge Ports (csv):</label>
-        <input id="lanPorts" type="text" value="ether3, ether4, ether5">
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+        <div>
+            <label>RouterOS Version:</label>
+            <select id="rosVer">
+                <option value="7">RouterOS v7 (Terbaru)</option>
+                <option value="6">RouterOS v6 (Lama)</option>
+            </select>
+        </div>
+        <div>
+            <label>Failover Method:</label>
+            <select id="failMode">
+                <option value="RECURSIVE">Recursive (Ping 8.8.8.8 / 1.1.1.1)</option>
+                <option value="GATEWAY">Check Gateway (Ping ISP IP)</option>
+            </select>
+        </div>
     </div>
-</div>
 
-<label>DoH Provider (Quad9 RESTORED):</label>
-<select id="dohProvider">
-    <option value="https://dns.google/dns-query">Google</option>
-    <option value="https://cloudflare-dns.com/dns-query">Cloudflare</option>
-    <option value="https://dns.quad9.net/dns-query">Quad9</option>
-    <option value="https://dns.adguard.com/dns-query">AdGuard</option>
-    <option value="disable">Non-aktifkan DoH</option>
-</select>
-
-<label>DNS Fallback:</label>
-<input id="dnsServer" value="8.8.8.8, 1.1.1.1">
-
-<hr>
-<button onclick="window.previewBasic()" class="btn btn-green">🔄 Generate Basic Script</button>
-<textarea id="output_basic" readonly placeholder="Hasil script Basic Setup..." style="height:150px; margin-top:10px;"></textarea>
-<button onclick="window.copyBasic()" class="btn btn-copy">📋 Copy Basic Script</button>
-`;
-
-// 2. Helper Functions
-const ispCont = document.getElementById("ispContainer");
-
-window.addIsp = function(name="", iface="", gw="") {
-    const count = ispCont.children.length + 1;
-    if(!name) name = "ISP" + count;
-    if(!iface) iface = "ether" + count;
-    
-    const div = document.createElement("div");
-    div.className = "isp-row";
-    div.style.cssText = "display:grid; grid-template-columns: 2fr 2fr 3fr auto; gap:10px; padding:10px; border:1px solid #ddd; margin-bottom:8px;";
-    
-    div.innerHTML = `
-        <div><label style="font-size:0.8rem">Nama ISP</label><input class="ispName" value="${name}"></div>
-        <div><label style="font-size:0.8rem">Interface</label><input class="ispIface" value="${iface}"></div>
-        <div><label style="font-size:0.8rem">Gateway IP</label><input class="ispGw" value="${gw}" placeholder="192.168.1.1"></div>
-        <button onclick="this.parentElement.remove()" class="btn-red" style="margin-top:22px;">X</button>
+    <hr>
+    <button onclick="window.previewRouting()" class="btn btn-blue" style="width:100%;">🔄 Generate Routing Script</button>
+    <textarea id="output_routing" readonly placeholder="Hasil script Routing & PCC..." style="height:250px; margin-top:10px;"></textarea>
+    <button onclick="window.copyRouting()" class="btn btn-copy" style="width:100%;">📋 Copy Routing Script</button>
     `;
-    ispCont.appendChild(div);
-}
+};
 
-// Default Data
-window.addIsp("Telkom", "ether1", "192.168.10.1");
-window.addIsp("Biznet", "ether2", "192.168.20.1");
+// 2. GENERATOR LOGIC (ROUTING)
+window.generateRoutingScript = function(ispList) {
+    if(!ispList || ispList.length === 0) return { error: true, msg: "⚠️ Data ISP Kosong. Klik Tab 1 dan lengkapi data!" };
 
-// 3. GENERATOR LOGIC (BASIC)
-window.generateBasicScript = function() {
-    window.ispList = []; 
-    let script = `# === 1. BASIC SETUP ===\n`;
-    
-    const rows = document.querySelectorAll(".isp-row");
-    let hasError = false;
+    const ros = document.getElementById("rosVer").value;
+    const failMode = document.getElementById("failMode").value;
+    let script = `# === 2. ROUTING, PCC & NAT ===\n`;
 
-    // 1. Collect Data & Build WAN Script
-    rows.forEach(row => {
-        const name = row.querySelector(".ispName").value.trim().replace(/\s/g, "_");
-        const iface = row.querySelector(".ispIface").value.trim();
-        const gw = row.querySelector(".ispGw").value.trim();
-        
-        if(!name || !iface || !gw) hasError = true;
-        window.ispList.push({ name, iface, gw });
+    // Address List (Bypass Local IP - DUKUNGAN PENUH)
+    script += `/ip firewall address-list\n`;
+    script += `add list=LOCAL_NET address=192.168.0.0/16\n`;
+    script += `add list=LOCAL_NET address=10.0.0.0/8\n`;
+    script += `add list=LOCAL_NET address=172.16.0.0/12\n\n`;
 
-        // Auto Calc IP Address (Gateway .1 -> IP .2)
-        const gwParts = gw.split(".");
-        let lastOctet = parseInt(gwParts[3]);
-        let newOctet = (lastOctet === 1) ? 2 : (lastOctet === 254 ? 253 : lastOctet + 1);
-        const myIp = `${gwParts[0]}.${gwParts[1]}.${gwParts[2]}.${newOctet}`;
-
-        script += `/ip address add address="${myIp}/24" interface="${iface}" comment="${name} Static IP"\n`;
-        // Hybrid DHCP Client Backup (add-default-route=no is key)
-        script += `/ip dhcp-client add interface="${iface}" disabled=no add-default-route=no use-peer-dns=no comment="${name} DHCP Client (Backup)"\n`;
+    // Mangle Rules
+    script += `/ip firewall mangle\n`;
+    ispList.forEach((isp, idx) => {
+        script += `add chain=input in-interface="${isp.iface}" action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes\n`;
+        // PCC Logic with Local IP Bypass
+        script += `add chain=prerouting in-interface="bridge-LAN" dst-address-list=!LOCAL_NET per-connection-classifier=both-addresses-and-ports:${ispList.length}/${idx} action=mark-connection new-connection-mark="${isp.name}_conn" passthrough=yes comment="PCC ${isp.name}"\n`;
+        script += `add chain=prerouting in-interface="bridge-LAN" connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
+        script += `add chain=output connection-mark="${isp.name}_conn" action=mark-routing new-routing-mark="to_${isp.name}" passthrough=no\n`;
     });
 
-    if(hasError) return { error: true, msg: "⚠️ Lengkapi semua data ISP (Nama, Interface, Gateway)!" };
+    // NAT (FIX: Masquerade wajib ada)
+    script += `\n# NAT MASQUERADE\n/ip firewall nat\n`;
+    ispList.forEach(isp => {
+        script += `add chain=srcnat out-interface="${isp.iface}" action=masquerade comment="NAT ${isp.name}"\n`;
+    });
 
-    // 2. LAN & DNS Logic
-    const ipLan = document.getElementById("ipLan").value;
-    const ports = document.getElementById("lanPorts").value;
-    const dns = document.getElementById("dnsServer").value;
-    const doh = document.getElementById("dohProvider").value;
-    const ipParts = ipLan.split("/")[0].split(".");
-    const network = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0`;
-    
-    script += `\n# LAN & Bridge Setup\n`;
-    script += `/interface bridge add name="bridge-LAN" protocol-mode=rstp arp=enabled comment="LAN Bridge"\n`;
-    if(ports) {
-        ports.split(",").forEach(p => {
-            script += `/interface bridge port add bridge="bridge-LAN" interface="${p.trim()}"\n`;
-        });
+    // Routing Tables (v7)
+    if(ros === "7") {
+        script += `\n# Routing Tables\n`;
+        ispList.forEach(isp => script += `/routing table add name="to_${isp.name}" fib\n`);
     }
 
-    script += `/ip address add address="${ipLan}" interface="bridge-LAN" network="${network}"\n`;
-    script += `/ip pool add name="LAN-Pool" ranges="${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.2-${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.254"\n`;
-    script += `/ip dhcp-server add name="LAN-DHCP" interface="bridge-LAN" address-pool="LAN-Pool" disabled=no\n`;
-    script += `/ip dhcp-server network add address="${network}/24" gateway="${ipParts.join('.')}" dns-server="${dns}"\n`;
+    // Routes (PCC)
+    script += `\n# PCC Routes\n/ip route\n`;
+    ispList.forEach(isp => {
+        const param = (ros === "7") ? `routing-table="to_${isp.name}"` : `routing-mark="to_${isp.name}"`;
+        // Static IP yang dibuat di Basic Setup
+        script += `add dst-address=0.0.0.0/0 gateway="${isp.gw}" ${param} distance=1 comment="PCC ${isp.name}" check-gateway=ping\n`;
+    });
 
-    // DNS & DoH
-    script += `\n# DNS Configuration\n`;
-    script += `/ip dns set allow-remote-requests=yes servers="${dns}"`;
-    if(doh !== "disable") script += ` use-doh-server="${doh}" verify-doh-cert=no`;
-    script += `\n`;
-    script += `/ip firewall filter add chain=input protocol=udp dst-port=53 in-interface-list=!LAN action=drop comment="Security: Drop External DNS"\n`;
+    // Failover (Main Table)
+    script += `\n# Failover Config\n`;
+    ispList.forEach((isp, idx) => {
+        const dist = idx + 1;
+        if(failMode === "RECURSIVE") {
+            const checkIp = (idx % 2 === 0) ? "8.8.8.8" : "1.1.1.1";
+            script += `add dst-address=${checkIp} gateway=${isp.gw} scope=10 comment="Recursive Check ${isp.name}"\n`;
+            script += `add dst-address=0.0.0.0/0 gateway=${checkIp} distance=${dist} target-scope=11 check-gateway=ping comment="Main ${isp.name}"\n`;
+        } else {
+            script += `add dst-address=0.0.0.0/0 gateway=${isp.gw} distance=${dist} check-gateway=ping comment="Main ${isp.name}"\n`;
+        }
+    });
 
     return { error: false, script: script };
-}
+};
 
-// 4. Button Actions
-window.previewBasic = function() {
-    const res = window.generateBasicScript();
-    document.getElementById("output_basic").value = res.error ? res.msg : res.script;
-}
+// 3. Button Actions (Exported to Window)
+window.previewRouting = function() {
+    // Refresh Basic dulu untuk update window.ispList
+    if(typeof window.generateBasicScript === 'function') window.generateBasicScript();
+    
+    const res = window.generateRoutingScript(window.ispList);
+    document.getElementById("output_routing").value = res.error ? res.msg : res.script;
+};
 
-window.copyBasic = function() {
-    const ta = document.getElementById("output_basic");
+window.copyRouting = function() {
+    const ta = document.getElementById("output_routing");
     ta.select(); navigator.clipboard.writeText(ta.value);
-    alert("Basic Script Copied!");
-}
+    alert("Routing Script Copied!");
+};

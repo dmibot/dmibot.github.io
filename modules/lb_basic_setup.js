@@ -2,6 +2,7 @@
 
 // 1. Fungsi Render UI (Dipanggil dari HTML onload)
 window.renderBasicUI = function() {
+    // 1.1 Render HTML
     document.getElementById("section1").innerHTML = `
     <h3>🧱 Basic Network Configuration</h3>
 
@@ -12,7 +13,7 @@ window.renderBasicUI = function() {
     </div>
 
     <div id="ispContainer"></div>
-    <button onclick="window.addIsp()" class="btn" style="background:#1976D2; width:auto;">+ Tambah ISP</button>
+    <button id="addIspBtn" class="btn" style="background:#1976D2; width:auto;">+ Tambah ISP</button>
 
     <hr>
 
@@ -46,7 +47,10 @@ window.renderBasicUI = function() {
     <button onclick="window.copyBasic()" class="btn btn-copy">📋 Copy Basic Script</button>
     `;
     
-    // Panggil fungsi untuk menambahkan ISP default
+    // 1.2 Tambahkan Event Listener setelah UI dimuat
+    document.getElementById('addIspBtn').addEventListener('click', window.addIsp);
+
+    // 1.3 Tambahkan ISP Default
     window.addIsp("Telkom", "ether1", "192.168.10.1");
     window.addIsp("Biznet", "ether2", "192.168.20.1");
 };
@@ -55,6 +59,10 @@ window.renderBasicUI = function() {
 const ispCont = document.getElementById("ispContainer");
 
 window.addIsp = function(name="", iface="", gw="") {
+    if (typeof name !== 'string') { // Jika dipanggil dari event listener, name adalah object event
+        name = ""; iface = ""; gw = "";
+    }
+    
     const count = ispCont.children.length + 1;
     if(!name) name = "ISP" + count;
     if(!iface) iface = "ether" + count;
@@ -80,7 +88,6 @@ window.generateBasicScript = function() {
     const rows = document.querySelectorAll(".isp-row");
     let hasError = false;
 
-    // 1. Collect Data & Build WAN Script
     rows.forEach(row => {
         const name = row.querySelector(".ispName").value.trim().replace(/\s/g, "_");
         const iface = row.querySelector(".ispIface").value.trim();
@@ -102,7 +109,7 @@ window.generateBasicScript = function() {
 
     if(hasError) return { error: true, msg: "⚠️ Lengkapi semua data ISP (Nama, Interface, Gateway)!" };
 
-    // 2. LAN & DNS Logic
+    // LAN & DNS Logic
     const ipLan = document.getElementById("ipLan").value;
     const ports = document.getElementById("lanPorts").value;
     const dns = document.getElementById("dnsServer").value;

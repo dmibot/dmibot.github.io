@@ -27,12 +27,12 @@ document.getElementById("section1").innerHTML = `
     </div>
 </div>
 
-<label>DoH Provider:</label>
+<label>DoH Provider (Quad9 RESTORED):</label>
 <select id="dohProvider">
-    <option value="https://dns.google/dns-query">Google (Default)</option>
+    <option value="https://dns.google/dns-query">Google</option>
     <option value="https://cloudflare-dns.com/dns-query">Cloudflare</option>
-    <option value="https://dns.quad9.net/dns-query">Quad9 (9.9.9.9) - RESTORED</option>
-    <option value="https://dns.adguard.com/dns-query">AdGuard (Block Ads)</option>
+    <option value="https://dns.quad9.net/dns-query">Quad9</option>
+    <option value="https://dns.adguard.com/dns-query">AdGuard</option>
     <option value="disable">Non-aktifkan DoH</option>
 </select>
 
@@ -66,6 +66,7 @@ window.addIsp = function(name="", iface="", gw="") {
     ispCont.appendChild(div);
 }
 
+// Default Data
 window.addIsp("Telkom", "ether1", "192.168.10.1");
 window.addIsp("Biznet", "ether2", "192.168.20.1");
 
@@ -93,6 +94,7 @@ window.generateBasicScript = function() {
         const myIp = `${gwParts[0]}.${gwParts[1]}.${gwParts[2]}.${newOctet}`;
 
         script += `/ip address add address="${myIp}/24" interface="${iface}" comment="${name} Static IP"\n`;
+        // Hybrid DHCP Client Backup (add-default-route=no is key)
         script += `/ip dhcp-client add interface="${iface}" disabled=no add-default-route=no use-peer-dns=no comment="${name} DHCP Client (Backup)"\n`;
     });
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mikrotik Load Balance Generator (Final)</title>
+<title>Mikrotik Load Balance Generator (Full Restore)</title>
 <style>
   body { font-family: 'Segoe UI', sans-serif; background: #f4f6f8; padding: 20px; color: #333; }
   .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -19,13 +19,14 @@
   .btn { padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; margin-top: 5px; }
   .btn-green { background: #388E3C; }
   .btn-copy { background: #607D8B; margin-top: 10px; }
+  .isp-row { display: grid; grid-template-columns: 2fr 2fr 3fr auto; gap: 10px; align-items: center; background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 
 <header style="text-align: center; margin-bottom: 20px;">
-  <h1>⚙️ Mikrotik Load Balance Tools</h1>
-  <p>Fitur Lengkap: Quad9, Auto IP, DoH, PCC, Failover & NAT Fix</p>
+  <h1>⚙️ Mikrotik Load Balance Generator</h1>
+  <p>Fitur Lengkap: DoH, Auto IP Calc, Hybrid WAN & NAT Fix</p>
 </header>
 
 <main style="max-width: 900px; margin: 0 auto;">
@@ -40,7 +41,7 @@
   
   <div id="section3" class="card hidden">
     <h3>📦 Final Result</h3>
-    <textarea id="combinedOutput" readonly placeholder="Klik Tab 3 untuk menggabungkan script..." style="height:450px;"></textarea>
+    <textarea id="combinedOutput" readonly placeholder="Klik Tab 3 untuk menggabungkan script..." style="height:450px; font-family: monospace;"></textarea>
     <button onclick="copyCombined()" class="btn btn-green">📋 Copy All Scripts</button>
   </div>
 </main>
@@ -64,17 +65,14 @@
         return;
     }
 
-    // 1. Generate Basic
     const basicRes = window.generateBasicScript();
     if(basicRes.error) {
         document.getElementById("combinedOutput").value = "ERROR TAB 1:\n" + basicRes.msg;
         return;
     }
 
-    // 2. Generate Routing
     const routingRes = window.generateRoutingScript(window.ispList);
     
-    // 3. Gabungkan Hasil
     const header = `# ==========================================\n# MIKROTIK ALL-IN-ONE CONFIG\n# Generated: ${new Date().toLocaleString()}\n# ==========================================\n\n`;
     
     let finalContent = header;

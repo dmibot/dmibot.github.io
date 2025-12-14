@@ -9,7 +9,7 @@ const DEFAULT_ADLISTS = [
     { url: "https://raw.githubusercontent.com/IgorKha/mikrotik-adlist/main/hosts/adguard.txt", name: "IgorKha (AdGuard Aggregated)" },
     
     // 3. HaGeZi - Multi Ultimate (Sangat Agresif dan Luas)
-    { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.ultimate.txt", name: "HaGeZi Multi ULTIMATE Hosts" }
+    { url: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/hosts/ultimate.txt", name: "HaGeZi Multi ULTIMATE Hosts" }
 ];
 
 const adlistCont = document.getElementById("adlistContainer");

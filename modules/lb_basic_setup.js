@@ -1,130 +1,113 @@
-// === Mikrotik LB Basic Setup Module ===
-
+// Render HTML langsung saat file diload
 document.getElementById("section1").innerHTML = `
 <h2>🧱 Basic Network Setup</h2>
-<div style="background:#e8f0fe; padding:15px; border-radius:6px; margin-bottom:20px; border:1px solid #d0e2ff;">
-    <label>Mode Koneksi WAN:</label>
-    <select id="wanModeInput" onchange="toggleGwInput()">
-        <option value="DHCP" selected>DHCP Client (Dynamic IP) - Rekomendasi</option>
+<div style="background:#e3f2fd; padding:10px; border-radius:5px; margin-bottom:15px;">
+    <label>Mode WAN:</label>
+    <select id="wanModeInput" onchange="window.toggleGwInput()">
+        <option value="DHCP">DHCP Client (Dynamic)</option>
         <option value="STATIC">Static IP (Manual)</option>
     </select>
-    <p style="margin:5px 0 0 0; font-size:0.85rem; color:#1877f2;">
-        ℹ️ <strong>DHCP:</strong> Gateway otomatis dari ISP. Script otomatis mengatur routing.<br>
-        ℹ️ <strong>Static:</strong> Anda wajib mengisi IP & Gateway manual.
-    </p>
 </div>
 
 <div id="ispContainer"></div>
-<button type="button" onclick="createISPBlock()" class="btn-action btn-blue" style="width:auto; margin-bottom:20px;">+ Tambah ISP</button>
+<button onclick="window.addIsp()" style="background:#2196F3; color:white; border:none; padding:8px;">+ Tambah ISP</button>
 <hr>
 
-<h3>🌐 LAN Configuration</h3>
-<label>IP Address LAN (CIDR):</label>
-<input id="ipLan" type="text" value="192.168.1.1/24" placeholder="Contoh: 192.168.1.1/24">
-
-<label>DNS Servers:</label>
-<input id="manualDns" value="8.8.8.8, 1.1.1.1" placeholder="8.8.8.8, 1.1.1.1">
+<h3>🌐 LAN</h3>
+<label>IP LAN:</label>
+<input id="ipLan" type="text" value="192.168.1.1/24">
+<label>DNS:</label>
+<input id="manualDns" value="8.8.8.8, 1.1.1.1">
 
 <div id="lanPorts"></div>
-<button type="button" onclick="createLanPort()" class="btn-action btn-green" style="width:auto; margin-top:5px;">+ Tambah Port LAN</button>
+<button onclick="window.addLanPort()" style="background:#4CAF50; color:white; border:none; padding:8px;">+ Tambah Port LAN</button>
 `;
 
-const ispContainer = document.getElementById("ispContainer");
-const lanPortsContainer = document.getElementById("lanPorts");
-
-window.toggleGwInput = () => {
+// Helper Functions (ditempel ke window agar HTML bisa baca)
+window.toggleGwInput = function() {
     const mode = document.getElementById("wanModeInput").value;
-    document.querySelectorAll(".gw-wrapper").forEach(el => {
-        el.style.display = (mode === "STATIC") ? "block" : "none";
-    });
-};
+    document.querySelectorAll(".gw-field").forEach(el => el.style.display = (mode === "STATIC") ? "block" : "none");
+}
 
-window.createISPBlock = (nameVal="", ifaceVal="", gwVal="") => {
-    if(!nameVal) nameVal = "ISP" + (document.querySelectorAll(".isp-block").length + 1);
+const ispCont = document.getElementById("ispContainer");
+const lanCont = document.getElementById("lanPorts");
+
+window.addIsp = function(name="", iface="", gw="") {
+    const count = ispCont.children.length + 1;
+    if(!name) name = "ISP" + count;
+    
     const div = document.createElement("div");
     div.className = "isp-block";
-    div.style.cssText = "border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:8px; background:#f9f9f9;";
+    div.style.cssText = "border:1px solid #ddd; padding:10px; margin-bottom:10px;";
     
-    const currentMode = document.getElementById("wanModeInput") ? document.getElementById("wanModeInput").value : "DHCP";
-    const gwDisplay = (currentMode === "STATIC") ? "block" : "none";
+    const mode = document.getElementById("wanModeInput") ? document.getElementById("wanModeInput").value : "DHCP";
+    const disp = (mode === "STATIC") ? "block" : "none";
 
     div.innerHTML = `
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div><label style="font-size:0.8rem">Nama ISP (Tanpa Spasi):</label><input class="ispName" value="${nameVal}"></div>
-            <div><label style="font-size:0.8rem">Interface WAN:</label><input class="ispIface" value="${ifaceVal}" placeholder="ether1"></div>
+        <label>Nama:</label><input class="ispName" value="${name}">
+        <label>Interface:</label><input class="ispIface" value="${iface}" placeholder="ether1">
+        <div class="gw-field" style="display:${disp}">
+            <label>Gateway (Static):</label><input class="ispGw" value="${gw}" placeholder="192.168.1.1">
         </div>
-        <div class="gw-wrapper" style="display:${gwDisplay}; margin-top:5px;">
-            <label style="font-size:0.8rem">Gateway IP (Wajib untuk Static):</label>
-            <input class="ispGw" value="${gwVal}" placeholder="192.168.1.1">
-        </div>
-        <button type="button" onclick="this.parentElement.remove()" class="btn-action btn-red">Hapus</button>
+        <button onclick="this.parentElement.remove()" style="background:red; color:white; border:none;">Hapus</button>
     `;
-    ispContainer.appendChild(div);
-};
+    ispCont.appendChild(div);
+}
 
-window.createLanPort = (val="") => {
+window.addLanPort = function(val="") {
     const div = document.createElement("div");
-    div.innerHTML = `<div style="display:flex; gap:10px; align-items:center;"><input class="lanPort" value="${val}" placeholder="etherX" style="margin-bottom:15px;"><button onclick="this.parentElement.remove()" class="btn-action btn-red" style="height:42px; margin-bottom:15px;">X</button></div>`;
-    lanPortsContainer.appendChild(div);
-};
+    div.innerHTML = `<input class="lanPort" value="${val}" placeholder="etherX"><button onclick="this.parentElement.remove()">X</button>`;
+    lanCont.appendChild(div);
+}
 
 // Init Defaults
-createISPBlock("Telkom", "ether1");
-createISPBlock("Biznet", "ether2");
-createLanPort("ether3");
-createLanPort("ether4");
+window.addIsp("Telkom", "ether1");
+window.addIsp("Biznet", "ether2");
 
-window.generateBasicSetup = () => {
-  window.ispList = [];
-  const wanMode = document.getElementById("wanModeInput").value;
-  let hasError = false;
+// === GENERATOR FUNCTION ===
+window.generateBasicSetup = function() {
+    window.ispList = [];
+    const mode = document.getElementById("wanModeInput").value;
+    
+    // Ambil Data ISP
+    const blocks = document.querySelectorAll(".isp-block");
+    if(blocks.length === 0) return { error: true, msg: "Tambahkan minimal 1 ISP!" };
 
-  document.querySelectorAll(".isp-block").forEach(block => {
-      const name = block.querySelector(".ispName").value.trim().replace(/\s/g, "_");
-      const iface = block.querySelector(".ispIface").value.trim();
-      const gw = block.querySelector(".ispGw").value.trim();
-      
-      if(!name || !iface) hasError = true;
-      if(wanMode === "STATIC" && !gw) hasError = true;
-      window.ispList.push({ name, iface, gw, mode: wanMode });
-  });
+    let script = `# === 1. BASIC SETUP ===\n`;
 
-  if(hasError || window.ispList.length === 0) return { error: true, msg: "⚠️ Data ISP tidak lengkap!" };
+    // LAN SETUP
+    const ipLan = document.getElementById("ipLan").value;
+    const dns = document.getElementById("manualDns").value;
+    const ipParts = ipLan.split("/")[0].split(".");
+    const network = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0`;
+    
+    script += `/interface bridge add name="bridge-LAN"\n`;
+    script += `/ip address add address="${ipLan}" interface="bridge-LAN" network="${network}"\n`;
+    script += `/ip pool add name="LAN-Pool" ranges="${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.2-${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.254"\n`;
+    script += `/ip dhcp-server add name="LAN-DHCP" interface="bridge-LAN" address-pool="LAN-Pool" disabled=no\n`;
+    script += `/ip dhcp-server network add address="${network}/24" gateway="${ipParts.join('.')}" dns-server="${dns}"\n`;
+    script += `/ip dns set allow-remote-requests=yes servers="${dns}"\n`;
 
-  const ipLan = document.getElementById("ipLan").value;
-  const dnsServers = document.getElementById("manualDns").value;
-  const ipParts = ipLan.split("/")[0].split(".");
-  const network = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.0`;
-  
-  let ports = [];
-  document.querySelectorAll(".lanPort").forEach(i => { if(i.value) ports.push(i.value); });
+    // WAN SETUP
+    script += `\n# WAN SETUP (${mode})\n`;
+    
+    blocks.forEach((block, idx) => {
+        const name = block.querySelector(".ispName").value.trim().replace(/\s/g, "_");
+        const iface = block.querySelector(".ispIface").value.trim();
+        const gw = block.querySelector(".ispGw").value.trim();
+        
+        window.ispList.push({ name, iface, gw, mode }); // Simpan ke global variable
 
-  let script = `# === 1. BASIC NETWORK SETUP ===\n`;
-  script += `/interface bridge add name="bridge-LAN" protocol-mode=rstp comment="LAN Bridge"\n`;
-  if(ports.length > 0) script += `/interface bridge port\n` + ports.map(p => `add bridge="bridge-LAN" interface="${p}"`).join("\n") + "\n";
-  
-  script += `/ip address add address="${ipLan}" interface="bridge-LAN" network="${network}"\n`;
-  script += `/ip pool add name="LAN-Pool" ranges="${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.2-${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.254"\n`;
-  script += `/ip dhcp-server add name="LAN-DHCP" interface="bridge-LAN" address-pool="LAN-Pool" lease-time=4h disabled=no\n`;
-  script += `/ip dhcp-server network add address="${network}/24" gateway="${ipParts.join(".")}" dns-server="${dnsServers}"\n`;
-  script += `\n# DNS & Security\n/ip dns set allow-remote-requests=yes servers="${dnsServers}"\n`;
-  script += `/ip firewall filter add chain=input protocol=udp dst-port=53 in-interface-list=!LAN action=drop comment="Block DNS from WAN"\n`;
+        if(mode === "DHCP") {
+            const dist = idx + 1;
+            // SCRIPT FIX: Update Route otomatis saat IP berubah
+            const dhcpScript = `{ :if ($bound=1) do={ :local gw $"gateway-address"; /ip route set [find comment=\\"PCC-${name}-Route\\"] gateway=$gw disabled=no; } else={ /ip route set [find comment=\\"PCC-${name}-Route\\"] disabled=yes; } }`;
+            
+            script += `/ip dhcp-client add interface="${iface}" disabled=no add-default-route=yes default-route-distance=${dist} use-peer-dns=no script="${dhcpScript}" comment="${name}"\n`;
+        } else {
+            script += `/ip address add address="${gw}" interface="${iface}" comment="${name}"\n`;
+        }
+    });
 
-  script += `\n# WAN CONFIGURATION (${wanMode})\n`;
-  window.ispList.forEach((isp, index) => {
-      script += `/ip dhcp-client remove [find interface="${isp.iface}"]\n`;
-      script += `/ip address remove [find interface="${isp.iface}"]\n`;
-
-      if (wanMode === "DHCP") {
-          const dist = index + 1;
-          const routeComment = `PCC-${isp.name}-Route`;
-          // SCRIPT KHUSUS: Update routing PCC otomatis saat IP berubah
-          const dhcpScript = `{ :if ($bound=1) do={ :local gw $"gateway-address"; /ip route set [find comment=\\"${routeComment}\\"] gateway=$gw disabled=no; :log info \\"PCC Update: ${isp.name} to $gw\\"; } else={ /ip route set [find comment=\\"${routeComment}\\"] disabled=yes; } }`;
-          script += `/ip dhcp-client add interface="${isp.iface}" disabled=no add-default-route=yes default-route-distance=${dist} use-peer-dns=no script="${dhcpScript}" comment="${isp.name}"\n`;
-      } else {
-          script += `/ip address add address="${isp.gw}" interface="${isp.iface}" comment="${isp.name} Static (EDIT IP INI SESUAI ISP)"\n`;
-      }
-  });
-
-  return { error: false, script: script };
-};
+    return { error: false, script: script };
+}

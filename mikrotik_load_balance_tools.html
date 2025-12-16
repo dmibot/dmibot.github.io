@@ -1,104 +1,82 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mikrotik Load Balance & PCC - by Tammy Artha</title>
-
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 1100px; margin: 0 auto; padding: 16px; color:#111; background:#fff; }
-    a { color: inherit; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom: 14px; }
-    .home-link {
-      text-decoration:none; padding:10px 12px; border:1px solid #ddd; border-radius:10px;
-      background:#fafafa; display:inline-flex; align-items:center; gap:8px;
-    }
-    .title-wrap h2 { margin:0; }
-    .title-wrap p { margin:6px 0 0; color:#555; }
-
-    .tabs { display:flex; gap:10px; margin: 14px 0 18px; flex-wrap: wrap; }
-    .tab-btn {
-      padding:10px 12px; border:1px solid #ddd; background:#fafafa;
-      cursor:pointer; border-radius:10px; font-weight:600;
-    }
-    .tab-btn.active { background:#1976D2; color:white; border-color:#1976D2; }
-
-    .panel { display:none; }
-    .panel.active { display:block; }
-
-    hr { margin: 18px 0; border:0; border-top:1px solid #eee; }
-
-    /* Style umum */
-    input, select, textarea {
-      width:100%; padding:10px; box-sizing:border-box;
-      border:1px solid #ddd; border-radius:10px; margin-top:6px;
-    }
-    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-    label { font-weight:600; display:block; margin-top:10px; }
-
-    .btn { padding:10px 12px; border:0; border-radius:10px; cursor:pointer; color:white; font-weight:600; }
-    .btn-green { background:#2E7D32; }
-    .btn-blue { background:#1565C0; }
-    .btn-copy { background:#424242; }
-    .btn-red { background:#D32F2F; color:#fff; border:0; padding:8px 10px; border-radius:10px; cursor:pointer; }
-
-    .card { border:1px solid #eee; border-radius:14px; padding:14px; background:#fff; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mikrotik Load Balance Tools | DmiBot</title>
+<link rel="icon" href="Mikrotik.svg">
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <noscript>
-    <div style="padding:12px; border:1px solid #f5c2c7; background:#f8d7da; border-radius:10px; margin-bottom:12px;">
-      Halaman ini butuh JavaScript aktif agar generator bisa jalan.
-    </div>
-  </noscript>
+<header>
+  <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
+  <h1>⚙️ Load Balance Generator</h1>
+  <p>PCC, Failover & Basic Network Setup (v6 & v7)</p>
+</header>
 
-  <div class="topbar">
-    <a class="home-link" href="index.html" aria-label="Kembali ke Home">⬅ Home</a>
-    <div class="title-wrap" style="flex:1;">
-      <h2>⚙️ Load Balance & PCC</h2>
-      <p>Tab 1: WAN (DHCP/Static/PPPoE) + LAN/DNS. Tab 2: Routing, PCC, NAT & Failover.</p>
-    </div>
+<main>
+  <div class="tabs">
+    <button id="tab1" class="active" onclick="openTab(1)">1. Basic Setup</button>
+    <button id="tab2" onclick="openTab(2)">2. Routing & PCC</button>
+    <button id="tab3" onclick="combineConfigs()">3. Combine & Export</button>
   </div>
 
-  <div class="card">
-    <div class="tabs">
-      <button id="tab1Btn" class="tab-btn active" type="button">Tab 1 — Basic Setup</button>
-      <button id="tab2Btn" class="tab-btn" type="button">Tab 2 — Routing & PCC</button>
-    </div>
+  <div id="section1" class="card"><p>⏳ Loading Module 1...</p></div>
+  <div id="section2" class="card hidden"><p>⏳ Loading Module 2...</p></div>
 
-    <div id="section1" class="panel active"></div>
-    <div id="section2" class="panel"></div>
+  <div id="section3" class="card hidden">
+    <h3>📦 Final Configuration</h3>
+    <p>Skrip di bawah ini adalah gabungan otomatis dari Tab 1 & Tab 2 berdasarkan data <strong>TERKINI</strong>.</p>
+    <textarea id="combinedOutput" readonly placeholder="Klik tab 'Combine & Export'..." style="height:300px;"></textarea>
+    <button onclick="copyAll()" style="width:100%; margin-top:10px;">📋 Copy All Scripts</button>
   </div>
+</main>
 
-  <script>
-    (function () {
-      const tab1Btn = document.getElementById('tab1Btn');
-      const tab2Btn = document.getElementById('tab2Btn');
-      const s1 = document.getElementById('section1');
-      const s2 = document.getElementById('section2');
+<footer><p style="text-align:center; padding:20px; color:#777;">&copy; 2025 DmiBot Projects</p></footer>
 
-      function showTab(n) {
-        if (n === 1) {
-          tab1Btn.classList.add('active');
-          tab2Btn.classList.remove('active');
-          s1.classList.add('active');
-          s2.classList.remove('active');
-        } else {
-          tab2Btn.classList.add('active');
-          tab1Btn.classList.remove('active');
-          s2.classList.add('active');
-          s1.classList.remove('active');
-        }
-      }
+<script>
+  window.ispList = [];
+</script>
 
-      tab1Btn.addEventListener('click', () => showTab(1));
-      tab2Btn.addEventListener('click', () => showTab(2));
-    })();
-  </script>
+<!-- Pastikan file JS revisi kamu memang berada di folder modules/ -->
+<script src="modules/lb_basic_setup.js"></script>
+<script src="modules/lb_routing_pcc.js"></script>
 
-  <!-- Load Tab 1 dulu, baru Tab 2 -->
-  <script src="lb_basic_setup.js" defer></script>
-  <script src="lb_routing_pcc.js" defer></script>
+<script>
+  function openTab(num){
+    document.querySelectorAll('.tabs button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('main .card').forEach(sec => sec.classList.add('hidden'));
+    document.getElementById('tab'+num).classList.add('active');
+    document.getElementById('section'+num).classList.remove('hidden');
+  }
+
+  function combineConfigs(){
+    openTab(3);
+
+    // 1) Paksa Generate Basic (update ispList & ambil script basic)
+    const basicRes = window.generateBasicScript();
+    if(basicRes.error) {
+      document.getElementById("combinedOutput").value = basicRes.msg;
+      return;
+    }
+
+    // 2) Paksa Generate Routing pakai ispList terbaru
+    const routingRes = window.generateRoutingScript(window.ispList);
+    if(routingRes.error) {
+      document.getElementById("combinedOutput").value = basicRes.script + "\n\n" + routingRes.msg;
+      return;
+    }
+
+    // 3) Gabungkan
+    const header = `# ==========================================\n# MIKROTIK ALL-IN-ONE CONFIG\n# Generated by DmiBot Tools\n# ==========================================\n\n`;
+    document.getElementById("combinedOutput").value = header + basicRes.script + "\n\n" + routingRes.script;
+  }
+
+  function copyAll(){
+    const ta = document.getElementById("combinedOutput");
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => { alert("✅ Skrip berhasil disalin!"); });
+  }
+</script>
 </body>
 </html>

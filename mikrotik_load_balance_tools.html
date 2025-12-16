@@ -3,71 +3,107 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Load Balance & PCC - DmiBot</title>
+  <title>Mikrotik Load Balance & PCC - by Tammy Artha</title>
 
   <style>
-    body { font-family: Arial, sans-serif; max-width: 1100px; margin: 0 auto; padding: 16px; color:#111; }
-    .tabs { display:flex; gap:10px; margin: 12px 0 18px; flex-wrap: wrap; }
-    .tab-btn { padding:10px 12px; border:1px solid #ddd; background:#fafafa; cursor:pointer; border-radius:8px; }
+    body { font-family: Arial, sans-serif; max-width: 1100px; margin: 0 auto; padding: 16px; color:#111; background:#fff; }
+    a { color: inherit; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom: 14px; }
+    .home-link {
+      text-decoration:none; padding:10px 12px; border:1px solid #ddd; border-radius:10px;
+      background:#fafafa; display:inline-flex; align-items:center; gap:8px;
+    }
+    .title-wrap h2 { margin:0; }
+    .title-wrap p { margin:6px 0 0; color:#555; }
+
+    .tabs { display:flex; gap:10px; margin: 14px 0 18px; flex-wrap: wrap; }
+    .tab-btn {
+      padding:10px 12px; border:1px solid #ddd; background:#fafafa;
+      cursor:pointer; border-radius:10px; font-weight:600;
+    }
     .tab-btn.active { background:#1976D2; color:white; border-color:#1976D2; }
+
     .panel { display:none; }
     .panel.active { display:block; }
+
     hr { margin: 18px 0; border:0; border-top:1px solid #eee; }
 
-    /* Optional: kelas tombol yang dipakai JS kamu (kalau belum ada CSS dari file lain) */
-    .btn { padding:10px 12px; border:0; border-radius:8px; cursor:pointer; color:white; }
+    /* Style umum agar halaman tetap rapi meski CSS tool berbeda-beda */
+    input, select, textarea {
+      width:100%; padding:10px; box-sizing:border-box;
+      border:1px solid #ddd; border-radius:10px; margin-top:6px;
+    }
+    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    label { font-weight:600; display:block; margin-top:10px; }
+
+    /* Tombol generik (kalau JS kamu pakai class btn/btn-green/btn-blue/btn-copy/btn-red) */
+    .btn { padding:10px 12px; border:0; border-radius:10px; cursor:pointer; color:white; font-weight:600; }
     .btn-green { background:#2E7D32; }
     .btn-blue { background:#1565C0; }
     .btn-copy { background:#424242; }
-    .btn-red { background:#D32F2F; color:#fff; border:0; padding:8px 10px; border-radius:8px; cursor:pointer; }
-    input, select, textarea { width:100%; padding:10px; box-sizing:border-box; border:1px solid #ddd; border-radius:8px; margin-top:6px; }
-    label { font-weight:600; display:block; margin-top:10px; }
-    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .btn-red { background:#D32F2F; color:#fff; border:0; padding:8px 10px; border-radius:10px; cursor:pointer; }
+
+    .card {
+      border:1px solid #eee; border-radius:14px; padding:14px; background:#fff;
+    }
   </style>
 </head>
 
 <body>
-  <h2 style="margin:0;">⚙️ Load Balance & PCC</h2>
-  <p style="margin:6px 0 0; color:#555;">
-    Tab 1 untuk setup WAN (DHCP/Static/PPPoE) + LAN/DNS. Tab 2 untuk Routing, PCC, NAT & Failover.
-  </p>
+  <!-- Top bar dengan tombol Home -->
+  <div class="topbar">
+    <a class="home-link" href="index.html" aria-label="Kembali ke Home">
+      ⬅ Home
+    </a>
 
-  <div class="tabs">
-    <button id="tab1Btn" class="tab-btn active" type="button">Tab 1 — Basic Setup</button>
-    <button id="tab2Btn" class="tab-btn" type="button">Tab 2 — Routing & PCC</button>
+    <div class="title-wrap" style="flex:1;">
+      <h2>⚙️ Load Balance & PCC</h2>
+      <p>Tab 1: WAN (DHCP/Static/PPPoE) + LAN/DNS. Tab 2: Routing, PCC, NAT & Failover.</p>
+    </div>
   </div>
 
-  <!-- Wajib ada (diisi oleh lb_basic_setup.js) -->
-  <div id="section1" class="panel active"></div>
+  <div class="card">
+    <!-- Tab buttons -->
+    <div class="tabs">
+      <button id="tab1Btn" class="tab-btn active" type="button">Tab 1 — Basic Setup</button>
+      <button id="tab2Btn" class="tab-btn" type="button">Tab 2 — Routing & PCC</button>
+    </div>
 
-  <!-- Wajib ada (diisi oleh lb_routing_pcc.js) -->
-  <div id="section2" class="panel"></div>
+    <!-- Wajib ada: akan diisi oleh lb_basic_setup.js -->
+    <div id="section1" class="panel active"></div>
+
+    <!-- Wajib ada: akan diisi oleh lb_routing_pcc.js -->
+    <div id="section2" class="panel"></div>
+  </div>
 
   <script>
     // Tab switcher sederhana
-    const tab1Btn = document.getElementById('tab1Btn');
-    const tab2Btn = document.getElementById('tab2Btn');
-    const s1 = document.getElementById('section1');
-    const s2 = document.getElementById('section2');
+    (function () {
+      const tab1Btn = document.getElementById('tab1Btn');
+      const tab2Btn = document.getElementById('tab2Btn');
+      const s1 = document.getElementById('section1');
+      const s2 = document.getElementById('section2');
 
-    function showTab(n) {
-      if (n === 1) {
-        tab1Btn.classList.add('active');
-        tab2Btn.classList.remove('active');
-        s1.classList.add('active');
-        s2.classList.remove('active');
-      } else {
-        tab2Btn.classList.add('active');
-        tab1Btn.classList.remove('active');
-        s2.classList.add('active');
-        s1.classList.remove('active');
+      function showTab(n) {
+        if (n === 1) {
+          tab1Btn.classList.add('active');
+          tab2Btn.classList.remove('active');
+          s1.classList.add('active');
+          s2.classList.remove('active');
+        } else {
+          tab2Btn.classList.add('active');
+          tab1Btn.classList.remove('active');
+          s2.classList.add('active');
+          s1.classList.remove('active');
+        }
       }
-    }
-    tab1Btn.onclick = () => showTab(1);
-    tab2Btn.onclick = () => showTab(2);
+
+      tab1Btn.addEventListener('click', () => showTab(1));
+      tab2Btn.addEventListener('click', () => showTab(2));
+    })();
   </script>
 
-  <!-- Penting: load Tab 1 dulu agar window.generateBasicScript & window.ispList siap -->
+  <!-- Penting: Tab 1 dulu, baru Tab 2 -->
   <script src="lb_basic_setup.js"></script>
   <script src="lb_routing_pcc.js"></script>
 </body>

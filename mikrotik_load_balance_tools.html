@@ -28,7 +28,7 @@
 
     hr { margin: 18px 0; border:0; border-top:1px solid #eee; }
 
-    /* Style umum agar halaman tetap rapi meski CSS tool berbeda-beda */
+    /* Style umum */
     input, select, textarea {
       width:100%; padding:10px; box-sizing:border-box;
       border:1px solid #ddd; border-radius:10px; margin-top:6px;
@@ -36,26 +36,25 @@
     textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
     label { font-weight:600; display:block; margin-top:10px; }
 
-    /* Tombol generik (kalau JS kamu pakai class btn/btn-green/btn-blue/btn-copy/btn-red) */
     .btn { padding:10px 12px; border:0; border-radius:10px; cursor:pointer; color:white; font-weight:600; }
     .btn-green { background:#2E7D32; }
     .btn-blue { background:#1565C0; }
     .btn-copy { background:#424242; }
     .btn-red { background:#D32F2F; color:#fff; border:0; padding:8px 10px; border-radius:10px; cursor:pointer; }
 
-    .card {
-      border:1px solid #eee; border-radius:14px; padding:14px; background:#fff;
-    }
+    .card { border:1px solid #eee; border-radius:14px; padding:14px; background:#fff; }
   </style>
 </head>
 
 <body>
-  <!-- Top bar dengan tombol Home -->
-  <div class="topbar">
-    <a class="home-link" href="index.html" aria-label="Kembali ke Home">
-      ⬅ Home
-    </a>
+  <noscript>
+    <div style="padding:12px; border:1px solid #f5c2c7; background:#f8d7da; border-radius:10px; margin-bottom:12px;">
+      Halaman ini butuh JavaScript aktif agar generator bisa jalan.
+    </div>
+  </noscript>
 
+  <div class="topbar">
+    <a class="home-link" href="index.html" aria-label="Kembali ke Home">⬅ Home</a>
     <div class="title-wrap" style="flex:1;">
       <h2>⚙️ Load Balance & PCC</h2>
       <p>Tab 1: WAN (DHCP/Static/PPPoE) + LAN/DNS. Tab 2: Routing, PCC, NAT & Failover.</p>
@@ -63,21 +62,16 @@
   </div>
 
   <div class="card">
-    <!-- Tab buttons -->
     <div class="tabs">
       <button id="tab1Btn" class="tab-btn active" type="button">Tab 1 — Basic Setup</button>
       <button id="tab2Btn" class="tab-btn" type="button">Tab 2 — Routing & PCC</button>
     </div>
 
-    <!-- Wajib ada: akan diisi oleh lb_basic_setup.js -->
     <div id="section1" class="panel active"></div>
-
-    <!-- Wajib ada: akan diisi oleh lb_routing_pcc.js -->
     <div id="section2" class="panel"></div>
   </div>
 
   <script>
-    // Tab switcher sederhana
     (function () {
       const tab1Btn = document.getElementById('tab1Btn');
       const tab2Btn = document.getElementById('tab2Btn');
@@ -103,8 +97,8 @@
     })();
   </script>
 
-  <!-- Penting: Tab 1 dulu, baru Tab 2 -->
-  <script src="lb_basic_setup.js"></script>
-  <script src="lb_routing_pcc.js"></script>
+  <!-- Load Tab 1 dulu, baru Tab 2 -->
+  <script src="lb_basic_setup.js" defer></script>
+  <script src="lb_routing_pcc.js" defer></script>
 </body>
 </html>
